@@ -1,10 +1,11 @@
-# 매일 아침 쿠팡 골드박스 특가로 kakao.html(카톡 글 페이지)을 새로 만들어 올려요.
+# 매시간 쿠팡 골드박스 + 카테고리 베스트를 가져와 가격을 기록하고,
+# 가격이 떨어진 상품까지 골라 kakao.html(카톡 글 페이지)을 새로 만들어 올려요.
 # API 키는 저장소 Settings > Secrets and variables > Actions 에 넣어둔 값을 써요.
-name: 매일 골드박스 카톡 글
+name: 매시간 핫딜 카톡 글
 
 on:
   schedule:
-    - cron: "0 23 * * *"   # 매일 한국시간 오전 8시 (UTC 23시). GitHub 사정으로 조금 늦을 수 있어요.
+    - cron: "7 * * * *"    # 매시간 7분쯤 (GitHub 사정으로 조금 늦을 수 있어요)
   workflow_dispatch:        # Actions 탭에서 'Run workflow'로 바로 돌릴 수도 있어요.
 
 permissions:
@@ -21,12 +22,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: 골드박스 특가로 kakao.html 만들기
+      - name: 핫딜 가져와서 kakao.html 만들기
         shell: powershell
         env:
           COUPANG_ACCESS_KEY: ${{ secrets.COUPANG_ACCESS_KEY }}
           COUPANG_SECRET_KEY: ${{ secrets.COUPANG_SECRET_KEY }}
-        run: ./tools/daily.ps1 -Max 10
+        run: ./tools/deals.ps1
 
       - name: GitHub에 올리기
         shell: powershell
@@ -35,10 +36,11 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add kakao.html
+          git add kakao.html data
           git diff --cached --quiet
           if ($LASTEXITCODE -ne 0) {
-            git commit -m "Update today's goldbox deals"
+            git commit -m "Update hourly deals"
+            git pull --rebase -q
             git push
             if ($LASTEXITCODE -ne 0) { exit 1 }
             # 사이트 다시 빌드 요청 (실패해도 괜찮아요: push만으로도 보통 다시 빌드돼요)

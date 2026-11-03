@@ -8,24 +8,42 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📣</text></svg>">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <style>
-  :root{ --bg:#f6f7f9; --ink:#16181d; --sub:#8b8f98; --line:#eceef2; --accent:#ff4d2e; --kakao:#fee500; }
+  :root{ --bg:#f6f7f9; --ink:#16181d; --sub:#8b8f98; --line:#eceef2; --accent:#ff4d2e; --kakao:#fee500; --blue:#2a62c9; }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
   .wrap{max-width:480px;margin:0 auto;padding:22px 16px 60px}
   h1{font-size:22px;font-weight:900;letter-spacing:-.5px}
   h1 b{color:var(--accent)}
-  .when{color:var(--sub);font-size:13px;margin-top:4px}
+  .when{color:var(--sub);font-size:13px;margin-top:4px;line-height:1.5}
   .how{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.7;margin-top:14px;color:#4a4f58}
+
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:14px 0 2px;scrollbar-width:none;position:sticky;top:0;background:var(--bg);z-index:2}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--ink)}
+  .chip i{font-style:normal;color:var(--sub);margin-left:4px;font-size:12px}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chip.on i{color:#c9ccd2}
+
   .deal{background:#fff;border-radius:18px;box-shadow:0 2px 12px rgba(20,24,40,.08);padding:14px;margin-top:14px}
+  .deal.sent{opacity:.55}
   .top{display:flex;gap:12px;align-items:center}
-  .top img{width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--line);flex:none;background:#fff}
-  .num{font-size:12px;font-weight:700;color:var(--sub)}
-  .name{font-size:14.5px;font-weight:500;line-height:1.4;word-break:keep-all}
+  .top img{width:68px;height:68px;border-radius:12px;object-fit:cover;border:1px solid var(--line);flex:none;background:#fff}
+  .tags{display:flex;gap:5px;flex-wrap:wrap}
+  .tag{font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:6px;background:#f1f2f5;color:#5a5f69}
+  .tag.drop{background:#ffece8;color:var(--accent)}
+  .tag.gold{background:#fff3d6;color:#a86a00}
+  .tag.best{background:#e9f1ff;color:var(--blue)}
+  .tag.new{background:var(--accent);color:#fff}
+  .name{font-size:14.5px;font-weight:500;line-height:1.4;word-break:keep-all;margin-top:4px}
   .price{font-weight:900;margin-top:2px}
-  pre{white-space:pre-wrap;word-break:break-all;font-family:inherit;font-size:13px;line-height:1.65;background:#fffbe0;border-radius:12px;padding:12px;margin-top:12px;color:#3a3a3a}
+  .price s{color:var(--sub);font-weight:400;font-size:13px;margin-right:6px}
+  .price em{font-style:normal;color:var(--accent);margin-left:6px;font-size:14px}
+  details{margin-top:10px}
+  summary{font-size:12.5px;color:var(--sub);cursor:pointer}
+  pre{white-space:pre-wrap;word-break:break-all;font-family:inherit;font-size:13px;line-height:1.65;background:#fffbe0;border-radius:12px;padding:12px;margin-top:8px;color:#3a3a3a}
   .copy{width:100%;margin-top:10px;padding:13px;border:none;border-radius:12px;background:var(--kakao);color:#191919;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer}
   .copy.done{background:#e6e8ec;color:#5a5f69}
-  .empty{text-align:center;color:var(--sub);padding:50px 0;font-size:14px}
+  .empty{text-align:center;color:var(--sub);padding:44px 10px;font-size:14px;line-height:1.7}
   .toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:rgba(22,24,29,.92);color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;white-space:nowrap}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
@@ -34,54 +52,109 @@
 <div class="wrap">
   <h1>📣 카톡 <b>핫딜 글</b></h1>
   <p class="when" id="when"></p>
-  <div class="how">① <b>글 복사</b>를 눌러요 → ② 카톡 오픈채팅방에 붙여넣기 → ③ 전송<br>링크가 들어 있어서 카톡이 상품 사진 미리보기를 자동으로 붙여줘요.</div>
+  <div class="how">① <b>글 복사</b>를 눌러요 → ② 카톡 오픈채팅방에 붙여넣기 → ③ 전송<br>링크가 들어 있어서 카톡이 상품 사진 미리보기를 자동으로 붙여줘요. 복사한 딜은 흐리게 표시돼요.</div>
+  <div class="chips" id="chips"></div>
   <div id="list"></div>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
-/* 아래 DATA는 tools/daily.ps1이 매일 쿠팡 골드박스로 채워요. 직접 고치지 않아도 돼요. */
-const DATA = /*DATA*/{"updated":"","deals":[]}/*END*/;
+/* 아래 DATA는 tools/deals.ps1이 매시간 쿠팡 데이터로 채워요. 직접 고치지 않아도 돼요. */
+const DATA = /*DATA*/{"updated":"","days":7,"cats":[],"deals":[]}/*END*/;
 
 const DISCLOSURE = "이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.";
 const won = n => Math.round(n).toLocaleString("ko-KR") + "원";
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* 가격이 떨어진 정도(최근 며칠 최고가 대비)에 따라 등급 */
+const grade = p => p >= 40 ? "초특급대박 🚨🚨🚨🚨🚨" : p >= 30 ? "초대박 🚨🚨🚨🚨" : p >= 20 ? "대박 🚨🚨🚨" : "가격 급락 🚨🚨";
 
 /* 카톡에 올릴 글 모양 */
 function message(d){
   const counts = d.name.match(/(\d+)\s*개(?!월)/g) || [];
   const n = counts.length === 1 ? parseInt(counts[0], 10) : 0;
   const unit = n > 1 ? ` (개당 ${won(d.price / n)})` : "";
+  const head =
+    d.type === "drop" ? [`↳ ${grade(d.pct)} ${won(d.price)}${unit}`, `    최근 ${DATA.days}일 최고 ${won(d.was)}보다 ${d.pct}% 내렸어요`] :
+    d.type === "gold" ? [`↳ 🔥 골드박스 특가 ${won(d.price)}${unit}`] :
+                        [`↳ 🏆 ${d.cat} 베스트 ${d.rank}위 ${won(d.price)}${unit}`];
   return [
-    DISCLOSURE,
-    "",
-    `☑️ ${d.name}`,
-    `↳ 🔥 골드박스 특가 ${won(d.price)}${unit}`,
+    DISCLOSURE, "",
+    `☑️ ${d.name}`, ...head,
     ...(d.rocket ? ["🚀 로켓배송"] : []),
-    "",
-    d.link,
-    "",
+    "", d.link, "",
     "✔️ 올린 시점의 쿠팡 판매가 기준이에요.",
     "✔️ 인기 딜은 빨리 품절되거나 가격이 바뀔 수 있어요!",
   ].join("\n");
 }
 
-const $ = id => document.getElementById(id);
+const FILTERS = [
+  { id:"all",  label:"전체",            test:() => true },
+  { id:"new",  label:"🆕 새로 들어온",   test:d => d.isNew },
+  { id:"drop", label:"📉 가격 급락",     test:d => d.type === "drop" },
+  { id:"gold", label:"🔥 골드박스",      test:d => d.type === "gold" },
+  ...DATA.cats.map(c => ({ id:"cat:" + c, label:"🏆 " + c, test:d => d.type === "best" && d.cat === c })),
+];
+
+/* 복사한 딜 기억하기 (이 휴대폰에만 저장) */
+let sent = {};
+try { sent = JSON.parse(localStorage.getItem("hottem-sent") || "{}"); } catch(e) {}
 if (DATA.updated) {
-  const [d, t] = DATA.updated.split(" ");
-  const [y, m, day] = d.split("-").map(Number);
-  $("when").textContent = `${y}년 ${m}월 ${day}일 ${t} 업데이트 · 골드박스 ${DATA.deals.length}개`;
+  const keep = new Date(new Date(DATA.updated.slice(0, 10)).getTime() - 7 * 864e5).toISOString().slice(0, 10);
+  for (const k in sent) if (sent[k] < keep) delete sent[k];
+}
+function markSent(key){
+  sent[key] = DATA.updated.slice(0, 10);
+  try { localStorage.setItem("hottem-sent", JSON.stringify(sent)); } catch(e) {}
 }
 
-$("list").innerHTML = DATA.deals.length ? DATA.deals.map((d, i) => `
-  <div class="deal">
+const $ = id => document.getElementById(id);
+let filter = DATA.deals.some(d => d.isNew) ? "new" : "all";
+
+if (DATA.updated) {
+  const [d, t] = DATA.updated.split(" ");
+  const [, m, day] = d.split("-").map(Number);
+  const c = t => DATA.deals.filter(x => x.type === t).length;
+  $("when").innerHTML = `${m}월 ${day}일 ${t} 업데이트 · 매시간 자동으로 바뀌어요<br>급락 ${c("drop")} · 골드박스 ${c("gold")} · 카테고리 베스트 ${c("best")}`;
+}
+
+function card(d, i){
+  const tag = d.type === "drop" ? `<span class="tag drop">📉 ${d.pct}% 급락</span>`
+            : d.type === "gold" ? `<span class="tag gold">🔥 골드박스</span>`
+            : `<span class="tag best">🏆 ${esc(d.cat)} ${d.rank}위</span>`;
+  const price = d.type === "drop" ? `<s>${won(d.was)}</s>${won(d.price)}<em>-${d.pct}%</em>` : won(d.price);
+  const done = !!sent[d.key];
+  return `<div class="deal ${done ? "sent" : ""}">
     <div class="top">
       <img src="${esc(d.image)}" alt="" loading="lazy">
-      <div><div class="num">${i + 1}번째 딜</div><div class="name">${esc(d.name)}</div><div class="price">${won(d.price)}</div></div>
+      <div>
+        <div class="tags">${d.isNew ? `<span class="tag new">NEW</span>` : ""}${tag}${d.rocket ? `<span class="tag">🚀 로켓</span>` : ""}</div>
+        <div class="name">${esc(d.name)}</div>
+        <div class="price">${price}</div>
+      </div>
     </div>
-    <pre>${esc(message(d))}</pre>
-    <button class="copy" data-i="${i}">글 복사</button>
-  </div>`).join("") : `<div class="empty">아직 오늘 가져온 특가가 없어요</div>`;
+    <details><summary>보낼 글 미리보기</summary><pre>${esc(message(d))}</pre></details>
+    <button class="copy ${done ? "done" : ""}" data-i="${i}">${done ? "✓ 복사했던 딜 · 다시 복사" : "글 복사"}</button>
+  </div>`;
+}
+
+function render(){
+  const f = FILTERS.find(x => x.id === filter) || FILTERS[0];
+  $("chips").innerHTML = FILTERS.map(x => {
+    const n = DATA.deals.filter(x.test).length;
+    if (!n && !["all", "drop"].includes(x.id)) return "";
+    return `<button class="chip ${x.id === filter ? "on" : ""}" data-f="${x.id}">${x.label}<i>${n}</i></button>`;
+  }).join("");
+  const items = DATA.deals.map((d, i) => [d, i]).filter(([d]) => f.test(d));
+  $("list").innerHTML = items.length ? items.map(([d, i]) => card(d, i)).join("")
+    : filter === "drop" ? `<div class="empty">아직 가격이 떨어진 상품이 없어요.<br>매시간 가격을 기록하고 있어서, 하루 이틀 지나면<br>최근 ${DATA.days}일보다 싸진 상품이 여기에 나와요.</div>`
+    : `<div class="empty">지금은 보여줄 딜이 없어요</div>`;
+}
+
+$("chips").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  filter = b.dataset.f; render();
+});
 
 let tt;
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),2000); }
@@ -98,11 +171,16 @@ async function copyText(text){
 
 $("list").addEventListener("click", async e => {
   const b = e.target.closest(".copy"); if (!b) return;
-  if (await copyText(message(DATA.deals[b.dataset.i]))) {
+  const d = DATA.deals[b.dataset.i];
+  if (await copyText(message(d))) {
+    markSent(d.key);
     b.textContent = "✓ 복사됨 · 카톡에 붙여넣으세요"; b.classList.add("done");
+    b.closest(".deal").classList.add("sent");
     toast("복사했어요 📋");
-  } else toast("복사가 안 됐어요. 글을 길게 눌러 복사해주세요");
+  } else toast("복사가 안 됐어요. 미리보기 글을 길게 눌러 복사해주세요");
 });
+
+render();
 </script>
 </body>
 </html>

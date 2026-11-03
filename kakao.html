@@ -8,24 +8,42 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📣</text></svg>">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <style>
-  :root{ --bg:#f6f7f9; --ink:#16181d; --sub:#8b8f98; --line:#eceef2; --accent:#ff4d2e; --kakao:#fee500; }
+  :root{ --bg:#f6f7f9; --ink:#16181d; --sub:#8b8f98; --line:#eceef2; --accent:#ff4d2e; --kakao:#fee500; --blue:#2a62c9; }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
   .wrap{max-width:480px;margin:0 auto;padding:22px 16px 60px}
   h1{font-size:22px;font-weight:900;letter-spacing:-.5px}
   h1 b{color:var(--accent)}
-  .when{color:var(--sub);font-size:13px;margin-top:4px}
+  .when{color:var(--sub);font-size:13px;margin-top:4px;line-height:1.5}
   .how{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.7;margin-top:14px;color:#4a4f58}
+
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:14px 0 2px;scrollbar-width:none;position:sticky;top:0;background:var(--bg);z-index:2}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--ink)}
+  .chip i{font-style:normal;color:var(--sub);margin-left:4px;font-size:12px}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chip.on i{color:#c9ccd2}
+
   .deal{background:#fff;border-radius:18px;box-shadow:0 2px 12px rgba(20,24,40,.08);padding:14px;margin-top:14px}
+  .deal.sent{opacity:.55}
   .top{display:flex;gap:12px;align-items:center}
-  .top img{width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--line);flex:none;background:#fff}
-  .num{font-size:12px;font-weight:700;color:var(--sub)}
-  .name{font-size:14.5px;font-weight:500;line-height:1.4;word-break:keep-all}
+  .top img{width:68px;height:68px;border-radius:12px;object-fit:cover;border:1px solid var(--line);flex:none;background:#fff}
+  .tags{display:flex;gap:5px;flex-wrap:wrap}
+  .tag{font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:6px;background:#f1f2f5;color:#5a5f69}
+  .tag.drop{background:#ffece8;color:var(--accent)}
+  .tag.gold{background:#fff3d6;color:#a86a00}
+  .tag.best{background:#e9f1ff;color:var(--blue)}
+  .tag.new{background:var(--accent);color:#fff}
+  .name{font-size:14.5px;font-weight:500;line-height:1.4;word-break:keep-all;margin-top:4px}
   .price{font-weight:900;margin-top:2px}
-  pre{white-space:pre-wrap;word-break:break-all;font-family:inherit;font-size:13px;line-height:1.65;background:#fffbe0;border-radius:12px;padding:12px;margin-top:12px;color:#3a3a3a}
+  .price s{color:var(--sub);font-weight:400;font-size:13px;margin-right:6px}
+  .price em{font-style:normal;color:var(--accent);margin-left:6px;font-size:14px}
+  details{margin-top:10px}
+  summary{font-size:12.5px;color:var(--sub);cursor:pointer}
+  pre{white-space:pre-wrap;word-break:break-all;font-family:inherit;font-size:13px;line-height:1.65;background:#fffbe0;border-radius:12px;padding:12px;margin-top:8px;color:#3a3a3a}
   .copy{width:100%;margin-top:10px;padding:13px;border:none;border-radius:12px;background:var(--kakao);color:#191919;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer}
   .copy.done{background:#e6e8ec;color:#5a5f69}
-  .empty{text-align:center;color:var(--sub);padding:50px 0;font-size:14px}
+  .empty{text-align:center;color:var(--sub);padding:44px 10px;font-size:14px;line-height:1.7}
   .toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:rgba(22,24,29,.92);color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;white-space:nowrap}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
@@ -34,54 +52,109 @@
 <div class="wrap">
   <h1>📣 카톡 <b>핫딜 글</b></h1>
   <p class="when" id="when"></p>
-  <div class="how">① <b>글 복사</b>를 눌러요 → ② 카톡 오픈채팅방에 붙여넣기 → ③ 전송<br>링크가 들어 있어서 카톡이 상품 사진 미리보기를 자동으로 붙여줘요.</div>
+  <div class="how">① <b>글 복사</b>를 눌러요 → ② 카톡 오픈채팅방에 붙여넣기 → ③ 전송<br>링크가 들어 있어서 카톡이 상품 사진 미리보기를 자동으로 붙여줘요. 복사한 딜은 흐리게 표시돼요.</div>
+  <div class="chips" id="chips"></div>
   <div id="list"></div>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
-/* 아래 DATA는 tools/daily.ps1이 매일 쿠팡 골드박스로 채워요. 직접 고치지 않아도 돼요. */
-const DATA = /*DATA*/{"updated":"2026-11-03 14:47","deals":[{"name":"바이탈플랜트 인덕션 롤팬 뉴오리지널 그레이","price":112000,"image":"https://img1c.coupangcdn.com/image/retail/images/311842535806587-16613cc6-7376-4fb9-82cf-0791a12f08b1.jpg","rocket":true,"category":"주방용품","link":"https://link.coupang.com/a/im4bVvqn4m"},{"name":"마이밀 정품 뉴프로틴 고소한맛","price":74900,"image":"https://image14.coupangcdn.com/image/retail/images/60196325275947-60de8422-5657-47a7-9f76-630c6405a017.jpg","rocket":true,"category":"식품","link":"https://link.coupang.com/a/im4bVyqPee"},{"name":"다우니 실내건조 초고농축 섬유유연제 프레시 클린 자스민향 리필","price":21990,"image":"https://img2a.coupangcdn.com/image/retail/images/279930070077795-4f634634-ef99-4440-ba8a-57ea14fa2f51.jpg","rocket":true,"category":"생활용품","link":"https://link.coupang.com/a/im4bVBSr6a"},{"name":"깨끗한나라 벚꽃 로맨틱 천연펄프 3겹 고급롤화장지","price":16380,"image":"https://image8.coupangcdn.com/image/retail/images/2159034107554856-af28941e-245f-4729-acf6-7d36dd5b122f.png","rocket":true,"category":"생활용품","link":"https://link.coupang.com/a/im4bVFmlCC"},{"name":"헤드앤숄더 두피 토탈 솔루션 딥클린 샴푸","price":13990,"image":"https://img5c.coupangcdn.com/image/retail/images/498427748594674-67f6ca2e-dadd-4469-9ec4-6e59d4920b78.jpg","rocket":true,"category":"뷰티","link":"https://link.coupang.com/a/im4bVIlHEq"},{"name":"오리고 플리스 블랭킷","price":26140,"image":"https://image12.coupangcdn.com/image/retail/images/96249789560498-052ef987-6237-4b0e-864b-9d68c70d3542.jpg","rocket":true,"category":"가구/홈인테리어","link":"https://link.coupang.com/a/im4bVLOpEq"},{"name":"뉴발란스 스탠다드 중목 양말 5팩 NBDSDMDL","price":17900,"image":"https://image2.coupangcdn.com/image/retail/images/891378276835897-489d351b-5663-4261-a841-3bac390828a7.jpg","rocket":true,"category":"패션잡화","link":"https://link.coupang.com/a/im4bVPijaS"},{"name":"르몽스 먼지없는 알러지케어 차렵이불 세트","price":64190,"image":"https://image9.coupangcdn.com/image/vendor_inventory/0bb0/1cc7e36f5552aa419c9286f8d022814c67fd4382ec1f83ee43ce92117c14.png","rocket":true,"category":"가구/홈인테리어","link":"https://link.coupang.com/a/im4bVSzgkK"},{"name":"다기능 마늘 다지기 고기 다지기 전동 다지기 믹서기 만능 다지기","price":19900,"image":"https://image6.coupangcdn.com/image/vendor_inventory/1fb7/7d72c1b03de15f37587d724d91cd72ca26a085b31eae867321f6289f31fb.jpg","rocket":true,"category":"가전디지털","link":"https://link.coupang.com/a/im4bVVqkLs"},{"name":"웰라쥬 리얼 히알루로닉 블루 앰플","price":18900,"image":"https://img2c.coupangcdn.com/image/retail/images/23109275375806-66e0449b-a752-47ae-af83-e535209617b9.jpg","rocket":true,"category":"뷰티","link":"https://link.coupang.com/a/im4bVZq9Tw"}]}/*END*/;
+/* 아래 DATA는 tools/deals.ps1이 매시간 쿠팡 데이터로 채워요. 직접 고치지 않아도 돼요. */
+const DATA = /*DATA*/{"updated":"2026-11-03 15:08","days":7,"cats":["식품","생활용품","주방용품","가전디지털","뷰티","홈인테리어","출산/유아동","헬스/건강식품","반려동물","스포츠/레저"],"deals":[{"key":"gold:8266336555-86952821688","type":"gold","name":"바이탈플랜트 인덕션 롤팬 뉴오리지널 그레이","price":112000,"image":"https://image7.coupangcdn.com/image/retail/images/311842535806587-16613cc6-7376-4fb9-82cf-0791a12f08b1.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FpQ4cF2","cat":null,"rank":1,"was":null,"pct":null,"isNew":false},{"key":"gold:6813646287-71290578403","type":"gold","name":"마이밀 정품 뉴프로틴 고소한맛","price":74900,"image":"https://image4.coupangcdn.com/image/retail/images/60196325275947-60de8422-5657-47a7-9f76-630c6405a017.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FooGB2G","cat":null,"rank":2,"was":null,"pct":null,"isNew":false},{"key":"gold:8773985820-91855119935","type":"gold","name":"다우니 실내건조 초고농축 섬유유연제 프레시 클린 자스민향 리필","price":21990,"image":"https://image7.coupangcdn.com/image/retail/images/279930070077795-4f634634-ef99-4440-ba8a-57ea14fa2f51.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FqVYPpA","cat":null,"rank":3,"was":null,"pct":null,"isNew":false},{"key":"gold:1207037903-3008436224","type":"gold","name":"깨끗한나라 벚꽃 로맨틱 천연펄프 3겹 고급롤화장지","price":16380,"image":"https://img5c.coupangcdn.com/image/retail/images/2159034107554856-af28941e-245f-4729-acf6-7d36dd5b122f.png","rocket":true,"link":"https://link.coupang.com/a/im5FpNiH1w","cat":null,"rank":4,"was":null,"pct":null,"isNew":false},{"key":"gold:1407366400-71731402309","type":"gold","name":"헤드앤숄더 두피 토탈 솔루션 딥클린 샴푸","price":13990,"image":"https://image14.coupangcdn.com/image/retail/images/498427748594674-67f6ca2e-dadd-4469-9ec4-6e59d4920b78.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FolxWtU","cat":null,"rank":5,"was":null,"pct":null,"isNew":false},{"key":"gold:8327441340-91137350292","type":"gold","name":"오리고 플리스 블랭킷","price":26140,"image":"https://image15.coupangcdn.com/image/retail/images/96249789560498-052ef987-6237-4b0e-864b-9d68c70d3542.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FpUCKXY","cat":null,"rank":6,"was":null,"pct":null,"isNew":false},{"key":"gold:8118316861-90052945491","type":"gold","name":"뉴발란스 스탠다드 중목 양말 5팩 NBDSDMDL","price":17900,"image":"https://img5c.coupangcdn.com/image/retail/images/891378276835897-489d351b-5663-4261-a841-3bac390828a7.jpg","rocket":true,"link":"https://link.coupang.com/a/im5Fp6yZyK","cat":null,"rank":7,"was":null,"pct":null,"isNew":false},{"key":"gold:8771465367-92507577580","type":"gold","name":"르몽스 먼지없는 알러지케어 차렵이불 세트","price":64190,"image":"https://image4.coupangcdn.com/image/vendor_inventory/0bb0/1cc7e36f5552aa419c9286f8d022814c67fd4382ec1f83ee43ce92117c14.png","rocket":true,"link":"https://link.coupang.com/a/im5FpelBIq","cat":null,"rank":8,"was":null,"pct":null,"isNew":false},{"key":"gold:9244233517-95659922715","type":"gold","name":"다기능 마늘 다지기 고기 다지기 전동 다지기 믹서기 만능 다지기","price":19900,"image":"https://img5c.coupangcdn.com/image/vendor_inventory/1fb7/7d72c1b03de15f37587d724d91cd72ca26a085b31eae867321f6289f31fb.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FoZznO0","cat":null,"rank":9,"was":null,"pct":null,"isNew":false},{"key":"gold:8350616562-91143810348","type":"gold","name":"코멧 뽑아쓰는 분리수거 배접 비닐봉투","price":9780,"image":"https://image4.coupangcdn.com/image/retail/images/238316875927424-443cd088-79c8-43ff-85f2-a0d4e321fa66.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FpJYeqq","cat":null,"rank":10,"was":null,"pct":null,"isNew":false},{"key":"best:7230779632-85491095723","type":"best","name":"신선한 대란","price":6990,"image":"https://img1a.coupangcdn.com/image/1025_amir_coupang_oct_80k/316d/6262fa64e13b4344cf33980399519eb5c7b2d25baac2bd9a33b7a5a7c762.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FqSONFI","cat":"식품","rank":1,"was":null,"pct":null,"isNew":false},{"key":"best:1271064981-70272921582","type":"best","name":"곰곰 무항생제 신선한 대란","price":8390,"image":"https://image2.coupangcdn.com/image/retail/images/2215512493945149-f801fa53-33fd-482b-abcf-20dda5817093.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FoiyAr6","cat":"식품","rank":2,"was":null,"pct":null,"isNew":false},{"key":"best:6528172171-73210037048","type":"best","name":"흙대파","price":2490,"image":"https://image4.coupangcdn.com/image/retail/images/4063320789843989-2f070b18-3886-4b8c-871b-2403227cfec9.jpg","rocket":true,"link":"https://link.coupang.com/a/im5Fp90CqG","cat":"식품","rank":3,"was":null,"pct":null,"isNew":false},{"key":"best:8366355412-90398752493","type":"best","name":"매직캔 매직롤 280 화이트 로고 인쇄 리필","price":14360,"image":"https://image11.coupangcdn.com/image/retail/images/2024/06/19/17/6/d5eb7c62-d505-418c-9304-fe55417d3066.jpg","rocket":true,"link":"https://link.coupang.com/a/im5Fn7VceO","cat":"생활용품","rank":1,"was":null,"pct":null,"isNew":false},{"key":"best:9407932009-94909139289","type":"best","name":"베르데리필 리필 매직캔 호환 리필 쓰레기 봉투 베이비 파우더향 250","price":9900,"image":"https://image13.coupangcdn.com/image/retail/images/165492334828407-2ce18342-1128-4205-acdf-f762714e9f20.png","rocket":true,"link":"https://link.coupang.com/a/im5FqQfkm4","cat":"생활용품","rank":2,"was":null,"pct":null,"isNew":false},{"key":"best:8703221845-3000064335","type":"best","name":"매직캔 280 그린 로고리필 기저귀 쓰레기봉투","price":19500,"image":"https://img5a.coupangcdn.com/image/retail/images/713346207073968-584cf134-0f7e-499c-8ad1-5c3d9e059b61.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FpbuxhI","cat":"생활용품","rank":3,"was":null,"pct":null,"isNew":false},{"key":"best:169280610-4220116848","type":"best","name":"코멧 깨끗한 천연펄프 2겹 키친타월 150매","price":6800,"image":"https://image15.coupangcdn.com/image/retail/images/77501536142093-e3d45edd-9f61-4817-9073-b527fca4280f.png","rocket":true,"link":"https://link.coupang.com/a/im5Fp3qjZY","cat":"주방용품","rank":1,"was":null,"pct":null,"isNew":false},{"key":"best:8255612928-90798555812","type":"best","name":"코멧 손이 편한 위생장갑","price":5280,"image":"https://img5c.coupangcdn.com/image/retail/images/526942403074766-9f48cebd-764c-49c0-b77a-76a38de541f2.jpg","rocket":true,"link":"https://link.coupang.com/a/im5Fpn67ps","cat":"주방용품","rank":2,"was":null,"pct":null,"isNew":false},{"key":"best:7134558328-3158599929","type":"best","name":"크리넥스 안심 3겹 키친타올","price":6700,"image":"https://image15.coupangcdn.com/image/retail/images/212202820595125-a3283e0c-7c03-4898-b6ae-731fc724862a.png","rocket":true,"link":"https://link.coupang.com/a/im5FA8Lqi4","cat":"주방용품","rank":3,"was":null,"pct":null,"isNew":true},{"key":"best:9150828084-70964612078","type":"best","name":"HanilMedical 탄소열선 고급 전기요 HL-D205(25)","price":29800,"image":"https://image10.coupangcdn.com/image/retail/images/213045621520415-179662fb-0af6-47d8-8b45-f87ce362a55b.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FphavS0","cat":"가전디지털","rank":1,"was":null,"pct":null,"isNew":false},{"key":"best:9682171979-90781295338","type":"best","name":"브리타 정수기 필터 막스트라 프로 퓨어 퍼포먼스 3p","price":23000,"image":"https://img5c.coupangcdn.com/image/retail/images/9591836727990-8c6324b4-4e94-4942-a4ea-e2374e1a1289.jpg","rocket":true,"link":"https://link.coupang.com/a/im5Fo8MMnY","cat":"가전디지털","rank":2,"was":null,"pct":null,"isNew":false},{"key":"best:9729244277-96039310973","type":"best","name":"Apple 2026 에어팟 5 액티브 노이즈 캔슬링 블루투스 이어폰","price":199000,"image":"https://image8.coupangcdn.com/image/retail/images/2026/09/10/7/7/ce512298-9be6-447c-ab11-3cbcd8c346d2.jpg","rocket":true,"link":"https://link.coupang.com/a/im5Fn4VQc0","cat":"가전디지털","rank":3,"was":null,"pct":null,"isNew":false},{"key":"best:7164345502-80519514876","type":"best","name":"세타필 모이스춰라이징 로션","price":12360,"image":"https://image3.coupangcdn.com/image/retail/images/77276365654004-a842d9c0-df4d-44fe-82a3-5dc3bc7ba775.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FosHraK","cat":"뷰티","rank":1,"was":null,"pct":null,"isNew":false},{"key":"best:9724752985-95084835947","type":"best","name":"센카 퍼펙트 휩 페이셜 워시 FA 클렌징폼","price":11950,"image":"https://img2c.coupangcdn.com/image/retail/images/2026/03/24/12/4/83b59b3e-3a6d-4a39-b2f7-607a2cf6b40f.jpg","rocket":true,"link":"https://link.coupang.com/a/im5Fp0qXYa","cat":"뷰티","rank":2,"was":null,"pct":null,"isNew":false},{"key":"best:9039379842-92187217244","type":"best","name":"일리윤 세라마이드 아토 로션 무향","price":14720,"image":"https://img4c.coupangcdn.com/image/retail/images/76383476284976-beeac87e-878a-434d-9b87-acc1ecbc6961.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FpWUC8y","cat":"뷰티","rank":3,"was":null,"pct":null,"isNew":false},{"key":"best:6671696651-82572322173","type":"best","name":"코멧 53 μm 경포장용 박스 테이프 48 mm*40 m","price":3390,"image":"https://image2.coupangcdn.com/image/retail/images/1149028466891514-9591f176-d46d-4c56-bd24-0312f36952fa.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FpkAMzQ","cat":"홈인테리어","rank":2,"was":null,"pct":null,"isNew":false},{"key":"best:9254396859-94341183135","type":"best","name":"쟈니베어 군인핫팩 특대형 180g","price":12600,"image":"https://image5.coupangcdn.com/image/retail/images/84260456228561-aa7bbef2-e031-4324-9be4-6b2f2fd243a2.jpg","rocket":true,"link":"https://link.coupang.com/a/im5Fo18Q7E","cat":"홈인테리어","rank":3,"was":null,"pct":null,"isNew":false},{"key":"best:188227098-4403776090","type":"best","name":"코멧 오리지널 유아용 아기물티슈 캡형","price":10890,"image":"https://img4c.coupangcdn.com/image/retail/images/44344613265746-312dd5ae-8844-4536-80c8-4110a24dd8c8.jpg","rocket":true,"link":"https://link.coupang.com/a/im5Foa3RNA","cat":"출산/유아동","rank":1,"was":null,"pct":null,"isNew":false},{"key":"best:9320256369-94586776590","type":"best","name":"블루나 본 퓨어 저자극 물티슈 캡형","price":7080,"image":"https://img2c.coupangcdn.com/image/retail/images/2147625288740083-e84f1ec9-b27b-44a7-80f3-505294b79453.jpg","rocket":true,"link":"https://link.coupang.com/a/im5Fo5iSRw","cat":"출산/유아동","rank":2,"was":null,"pct":null,"isNew":false},{"key":"best:8548508229-84095676789","type":"best","name":"Bebeen 120 유아물티슈 캡형","price":11600,"image":"https://img5a.coupangcdn.com/image/retail/images/1423721803262108-18b9773d-b5e2-4ccc-b3c7-cb3ed11ad1af.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FBbKMkS","cat":"출산/유아동","rank":3,"was":null,"pct":null,"isNew":true},{"key":"best:9725928327-86432233391","type":"best","name":"제주삼다수 그린 무라벨","price":9100,"image":"https://image6.coupangcdn.com/image/retail/images/71396442910855-7b1c9ca8-e9d0-4c1c-aa2a-16ee5781d206.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FqdL65d","cat":"헬스/건강식품","rank":3,"was":null,"pct":null,"isNew":false},{"key":"best:7299719601-85811303945","type":"best","name":"탐사 실속형 배변패드","price":5990,"image":"https://img3a.coupangcdn.com/image/retail/images/386688755640254-04f1dee4-b35d-4af8-8e71-816be4afdc13.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FqNfYlg","cat":"반려동물","rank":1,"was":null,"pct":null,"isNew":false},{"key":"best:8615130283-95225404493","type":"best","name":"캐츠랑 전연령 고양이 건식사료","price":18450,"image":"https://image8.coupangcdn.com/image/vendor_inventory/de2a/8bee3aeb4e95af1ba8185e6f6bcfe5a9d22b1049e553244b5eee0ba8974b.jpg","rocket":false,"link":"https://link.coupang.com/a/im5FoWiqE8","cat":"반려동물","rank":3,"was":null,"pct":null,"isNew":false},{"key":"best:6417202386-81039306234","type":"best","name":"앳플리 디지털 LED 체중계","price":13900,"image":"https://image12.coupangcdn.com/image/retail/images/941394364069454-4923623b-d8b4-49bd-84a3-94ae7eca18b8.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FozshQ4","cat":"스포츠/레저","rank":2,"was":null,"pct":null,"isNew":false},{"key":"best:8391768862-90834904373","type":"best","name":"하루온 붙이는 핫팩 50g 10개입","price":15770,"image":"https://img1a.coupangcdn.com/image/retail/images/2903529421943-21125d8f-c224-462a-989f-78d3b690c1f7.jpg","rocket":true,"link":"https://link.coupang.com/a/im5FoeM5NA","cat":"스포츠/레저","rank":3,"was":null,"pct":null,"isNew":false}]}/*END*/;
 
 const DISCLOSURE = "이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.";
 const won = n => Math.round(n).toLocaleString("ko-KR") + "원";
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* 가격이 떨어진 정도(최근 며칠 최고가 대비)에 따라 등급 */
+const grade = p => p >= 40 ? "초특급대박 🚨🚨🚨🚨🚨" : p >= 30 ? "초대박 🚨🚨🚨🚨" : p >= 20 ? "대박 🚨🚨🚨" : "가격 급락 🚨🚨";
 
 /* 카톡에 올릴 글 모양 */
 function message(d){
   const counts = d.name.match(/(\d+)\s*개(?!월)/g) || [];
   const n = counts.length === 1 ? parseInt(counts[0], 10) : 0;
   const unit = n > 1 ? ` (개당 ${won(d.price / n)})` : "";
+  const head =
+    d.type === "drop" ? [`↳ ${grade(d.pct)} ${won(d.price)}${unit}`, `    최근 ${DATA.days}일 최고 ${won(d.was)}보다 ${d.pct}% 내렸어요`] :
+    d.type === "gold" ? [`↳ 🔥 골드박스 특가 ${won(d.price)}${unit}`] :
+                        [`↳ 🏆 ${d.cat} 베스트 ${d.rank}위 ${won(d.price)}${unit}`];
   return [
-    DISCLOSURE,
-    "",
-    `☑️ ${d.name}`,
-    `↳ 🔥 골드박스 특가 ${won(d.price)}${unit}`,
+    DISCLOSURE, "",
+    `☑️ ${d.name}`, ...head,
     ...(d.rocket ? ["🚀 로켓배송"] : []),
-    "",
-    d.link,
-    "",
+    "", d.link, "",
     "✔️ 올린 시점의 쿠팡 판매가 기준이에요.",
     "✔️ 인기 딜은 빨리 품절되거나 가격이 바뀔 수 있어요!",
   ].join("\n");
 }
 
-const $ = id => document.getElementById(id);
+const FILTERS = [
+  { id:"all",  label:"전체",            test:() => true },
+  { id:"new",  label:"🆕 새로 들어온",   test:d => d.isNew },
+  { id:"drop", label:"📉 가격 급락",     test:d => d.type === "drop" },
+  { id:"gold", label:"🔥 골드박스",      test:d => d.type === "gold" },
+  ...DATA.cats.map(c => ({ id:"cat:" + c, label:"🏆 " + c, test:d => d.type === "best" && d.cat === c })),
+];
+
+/* 복사한 딜 기억하기 (이 휴대폰에만 저장) */
+let sent = {};
+try { sent = JSON.parse(localStorage.getItem("hottem-sent") || "{}"); } catch(e) {}
 if (DATA.updated) {
-  const [d, t] = DATA.updated.split(" ");
-  const [y, m, day] = d.split("-").map(Number);
-  $("when").textContent = `${y}년 ${m}월 ${day}일 ${t} 업데이트 · 골드박스 ${DATA.deals.length}개`;
+  const keep = new Date(new Date(DATA.updated.slice(0, 10)).getTime() - 7 * 864e5).toISOString().slice(0, 10);
+  for (const k in sent) if (sent[k] < keep) delete sent[k];
+}
+function markSent(key){
+  sent[key] = DATA.updated.slice(0, 10);
+  try { localStorage.setItem("hottem-sent", JSON.stringify(sent)); } catch(e) {}
 }
 
-$("list").innerHTML = DATA.deals.length ? DATA.deals.map((d, i) => `
-  <div class="deal">
+const $ = id => document.getElementById(id);
+let filter = DATA.deals.some(d => d.isNew) ? "new" : "all";
+
+if (DATA.updated) {
+  const [d, t] = DATA.updated.split(" ");
+  const [, m, day] = d.split("-").map(Number);
+  const c = t => DATA.deals.filter(x => x.type === t).length;
+  $("when").innerHTML = `${m}월 ${day}일 ${t} 업데이트 · 매시간 자동으로 바뀌어요<br>급락 ${c("drop")} · 골드박스 ${c("gold")} · 카테고리 베스트 ${c("best")}`;
+}
+
+function card(d, i){
+  const tag = d.type === "drop" ? `<span class="tag drop">📉 ${d.pct}% 급락</span>`
+            : d.type === "gold" ? `<span class="tag gold">🔥 골드박스</span>`
+            : `<span class="tag best">🏆 ${esc(d.cat)} ${d.rank}위</span>`;
+  const price = d.type === "drop" ? `<s>${won(d.was)}</s>${won(d.price)}<em>-${d.pct}%</em>` : won(d.price);
+  const done = !!sent[d.key];
+  return `<div class="deal ${done ? "sent" : ""}">
     <div class="top">
       <img src="${esc(d.image)}" alt="" loading="lazy">
-      <div><div class="num">${i + 1}번째 딜</div><div class="name">${esc(d.name)}</div><div class="price">${won(d.price)}</div></div>
+      <div>
+        <div class="tags">${d.isNew ? `<span class="tag new">NEW</span>` : ""}${tag}${d.rocket ? `<span class="tag">🚀 로켓</span>` : ""}</div>
+        <div class="name">${esc(d.name)}</div>
+        <div class="price">${price}</div>
+      </div>
     </div>
-    <pre>${esc(message(d))}</pre>
-    <button class="copy" data-i="${i}">글 복사</button>
-  </div>`).join("") : `<div class="empty">아직 오늘 가져온 특가가 없어요</div>`;
+    <details><summary>보낼 글 미리보기</summary><pre>${esc(message(d))}</pre></details>
+    <button class="copy ${done ? "done" : ""}" data-i="${i}">${done ? "✓ 복사했던 딜 · 다시 복사" : "글 복사"}</button>
+  </div>`;
+}
+
+function render(){
+  const f = FILTERS.find(x => x.id === filter) || FILTERS[0];
+  $("chips").innerHTML = FILTERS.map(x => {
+    const n = DATA.deals.filter(x.test).length;
+    if (!n && !["all", "drop"].includes(x.id)) return "";
+    return `<button class="chip ${x.id === filter ? "on" : ""}" data-f="${x.id}">${x.label}<i>${n}</i></button>`;
+  }).join("");
+  const items = DATA.deals.map((d, i) => [d, i]).filter(([d]) => f.test(d));
+  $("list").innerHTML = items.length ? items.map(([d, i]) => card(d, i)).join("")
+    : filter === "drop" ? `<div class="empty">아직 가격이 떨어진 상품이 없어요.<br>매시간 가격을 기록하고 있어서, 하루 이틀 지나면<br>최근 ${DATA.days}일보다 싸진 상품이 여기에 나와요.</div>`
+    : `<div class="empty">지금은 보여줄 딜이 없어요</div>`;
+}
+
+$("chips").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  filter = b.dataset.f; render();
+});
 
 let tt;
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),2000); }
@@ -98,11 +171,16 @@ async function copyText(text){
 
 $("list").addEventListener("click", async e => {
   const b = e.target.closest(".copy"); if (!b) return;
-  if (await copyText(message(DATA.deals[b.dataset.i]))) {
+  const d = DATA.deals[b.dataset.i];
+  if (await copyText(message(d))) {
+    markSent(d.key);
     b.textContent = "✓ 복사됨 · 카톡에 붙여넣으세요"; b.classList.add("done");
+    b.closest(".deal").classList.add("sent");
     toast("복사했어요 📋");
-  } else toast("복사가 안 됐어요. 글을 길게 눌러 복사해주세요");
+  } else toast("복사가 안 됐어요. 미리보기 글을 길게 눌러 복사해주세요");
 });
+
+render();
 </script>
 </body>
 </html>

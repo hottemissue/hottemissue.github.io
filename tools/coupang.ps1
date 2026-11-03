@@ -2,8 +2,9 @@
 #   상품 검색:     .\tools\coupang.ps1 -Action search -Items "감성 무드등" -Limit 5
 #   파트너스 링크: .\tools\coupang.ps1 -Action deeplink -Items "https://www.coupang.com/vp/products/123", "..."
 #   오늘의 골드박스: .\tools\coupang.ps1 -Action goldbox
+#   카테고리 베스트: .\tools\coupang.ps1 -Action best -Items 1012, 1014 -Limit 20
 param(
-  [Parameter(Mandatory = $true)][ValidateSet("search", "deeplink", "goldbox")][string]$Action,
+  [Parameter(Mandatory = $true)][ValidateSet("search", "deeplink", "goldbox", "best")][string]$Action,
   [string[]]$Items = @(),
   [int]$Limit = 5,
   [string]$SubId = "hottem"
@@ -80,6 +81,12 @@ $out = switch ($Action) {
   "goldbox" {
     $r = Invoke-Coupang "GET" "$base/products/goldbox" "subId=$SubId"
     $r.data
+  }
+  "best" {
+    foreach ($cat in $Items) {
+      $r = Invoke-Coupang "GET" "$base/products/bestcategories/$cat" "limit=$Limit&subId=$SubId"
+      $r.data | ForEach-Object { $_ | Add-Member categoryId $cat -PassThru }
+    }
   }
 }
 ConvertTo-Json @($out) -Depth 6
