@@ -52,12 +52,16 @@
   .card{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:20px;padding:12px;box-shadow:0 2px 12px rgba(20,24,40,.08);text-decoration:none;color:inherit;transition:transform .12s}
   .card:active{transform:scale(.98)}
   .thumb{width:76px;height:76px;border-radius:14px;flex:none;display:grid;place-items:center;font-size:38px;overflow:hidden}
-  .thumb svg{width:100%;height:100%;display:block}
+  .thumb svg,.thumb img{width:100%;height:100%;display:block}
+  .thumb img{object-fit:cover}
+  .thumb.photo{background:#fff!important;border:1px solid var(--line)}
   .info{flex:1;min-width:0}
   .title{font-size:15.5px;font-weight:500;line-height:1.4;letter-spacing:-.2px;word-break:keep-all}
   .meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
   .tag{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:6px;background:var(--soft);color:#5a5f69}
   .tag.hot{background:#ffece8;color:var(--accent)}
+  .tag.price{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .tag.rocket{background:#e9f1ff;color:#2a62c9}
   .arrow{color:#c5c8ce;font-size:20px;flex:none;padding-right:4px}
 
   .pin{background:linear-gradient(135deg,#fff7ec,#fff);border:1px solid #ffe2c2}
@@ -109,7 +113,7 @@
 
   <footer>
     이 페이지의 링크를 통해 구매 시 일정액의 수수료를 제공받을 수 있습니다.<br>
-    가격과 재고는 쿠팡에서 실시간으로 바뀔 수 있어요.<br>© 핫템이슈
+    가격은 2026년 11월 3일 기준이며, 가격과 재고는 쿠팡에서 실시간으로 바뀔 수 있어요.<br>© 핫템이슈
   </footer>
 </div>
 
@@ -121,27 +125,41 @@
    - no   : 게시물 번호 (인스타 게시물과 맞추면 검색이 편해요)
    - title: 카드에 보일 상품명
    - cat  : 카테고리 (아래 CATS 중 하나)
-   - emoji: 썸네일 아이콘 (나중에 실제 사진으로 교체 가능)
+   - price: 가격 (원, 숫자만) / rocket: 로켓배송이면 true
+   - photo: 상품 사진 주소 (쿠팡 파트너스 API에서 받은 것)
+   - img  : 사진이 안 열릴 때 대신 보여줄 그림 (아래 THUMB 중 하나)
    - link : 쿠팡 파트너스에서 만든 내 링크 (https://link.coupang.com/a/xxxx)
    ========================================================= */
 const PINNED = [
-  { title:"🔥 오늘의 쿠팡 특가 모음", emoji:"🛒", img:"cart", bg:"#fff1e0", link:"https://www.coupang.com/np/goldbox", tags:["매일 업데이트"] },
+  { title:"🔥 오늘의 쿠팡 특가 모음", emoji:"🛒", img:"cart", bg:"#fff1e0", link:"https://link.coupang.com/a/imXXXzO7Yi", tags:["매일 업데이트"] },
   { title:"🔔 핫템 알림방 (카톡 오픈채팅)", emoji:"💬", img:"chat", bg:"#fff8d6", link:"#", tags:["신상 알림"] },
 ];
 
 const PRODUCTS = [
-  { no:12, title:"침대 위 분위기 끝판왕 감성 무드등", cat:"감성템", emoji:"🌙", img:"lamp", bg:"#ece9ff", link:"https://www.coupang.com/np/search?q=감성+무드등" },
-  { no:11, title:"건조한 원룸 필수, 미니 무선 가습기", cat:"생활",   emoji:"💧", img:"humid", bg:"#e3f4ff", link:"https://www.coupang.com/np/search?q=미니+가습기" },
-  { no:10, title:"자취생 1인용 미니 에어프라이어",     cat:"주방",   emoji:"🍟", img:"fryer", bg:"#fff0dc", link:"https://www.coupang.com/np/search?q=미니+에어프라이어" },
-  { no:9,  title:"한겨울 필수템 전기요 특가",           cat:"특가",   emoji:"🔥", img:"blanket", bg:"#ffe6e1", link:"https://www.coupang.com/np/search?q=전기요" },
-  { no:8,  title:"폭신폭신 극세사 수면바지",            cat:"패션",   emoji:"🧦", img:"pants", bg:"#ffe9f3", link:"https://www.coupang.com/np/search?q=수면바지" },
-  { no:7,  title:"책상 정리되는 3in1 무선 충전 거치대", cat:"디지털", emoji:"🔌", img:"charger", bg:"#e8eef5", link:"https://www.coupang.com/np/search?q=무선충전+거치대" },
-  { no:6,  title:"캠핑 감성 레트로 LED 랜턴",           cat:"감성템", emoji:"🏕️", img:"lantern", bg:"#e7f3e3", link:"https://www.coupang.com/np/search?q=레트로+랜턴" },
-  { no:5,  title:"거실 분위기 바꾸는 포근한 러그",      cat:"감성템", emoji:"🧶", img:"rug", bg:"#f5ede3", link:"https://www.coupang.com/np/search?q=거실+러그" },
-  { no:4,  title:"하루종일 따뜻한 스텐 텀블러",         cat:"생활",   emoji:"☕", img:"tumbler", bg:"#efe8e1", link:"https://www.coupang.com/np/search?q=텀블러" },
-  { no:3,  title:"주방 정리 끝판왕 투명 수납함",        cat:"주방",   emoji:"🧺", img:"box", bg:"#f0f4e6", link:"https://www.coupang.com/np/search?q=주방+수납함" },
-  { no:2,  title:"손목 편한 버티컬 무선 마우스",        cat:"디지털", emoji:"🖱️", img:"mouse", bg:"#e9ecf2", link:"https://www.coupang.com/np/search?q=버티컬+마우스" },
-  { no:1,  title:"방 안 가득 은은한 향, 디퓨저",        cat:"특가",   emoji:"🌿", img:"diffuser", bg:"#e5f3ec", link:"https://www.coupang.com/np/search?q=디퓨저" },
+  { no:12, title:"천장에 바다가 일렁이는 물멍 무드등", cat:"감성템", emoji:"🌙", img:"lamp", bg:"#ece9ff", price:9900, rocket:true, link:"https://link.coupang.com/a/imXXWvgK8i",
+    photo:"https://ads-partners.coupang.com/image1/fV9J4PSFTE_Ujlp1fYpWPLPCBwXHe1kqxsvR1YDKbg2Q9OywXgLQZw8jpe-lXB7FEtsZ5F08FuspaQhfhuT_c0MfKDe10UFNIFgNW1FfFwJys4Uqh5xyXO4LrFv3aTtedX34gsZw7yTuNPYKNWT3ao_HRiVm9P2DcugspH_YcdxZNFURuxuJJc3vjvEAhqHxn-U0tt2xpdydEy9pZyrydlo6WuLZ-yyKMF3y0j_mpws03DKP1JD1sQkzLEHJNyuCUCnCWW1IM97eaqR4i9SebExlnaWpjQBw8pR334FnITnkk5HsekOTzsQVBlF1afcvdhizK23tAzg7nkX1-FHuIprUdYiE1zR9efwWjMXZ0s0YxED_cragJpWJirMSFdOm5nZhtMHGruyTgMUxrLlve75ZQDArdF7Kdd1s8SjdDx8ZdaRPTKNOpuUlY9glMaPrJklxAsi1BUGf9Wng03VLm2BIt9XV9NsUYa4wekVL4LWjk-0lRQ9CMzmilYdKEo7PYTBACviCoyshtJJIG66vicqkunrnwKbtIQtUYbWZqnJ-qyhUuMc3ug==" },
+  { no:11, title:"건조한 원룸 필수, 듀얼미스트 미니 가습기", cat:"겨울템", emoji:"💧", img:"humid", bg:"#e3f4ff", price:18800, rocket:true, link:"https://link.coupang.com/a/imXXWA0gaO",
+    photo:"https://ads-partners.coupang.com/image1/U8dp87yVXaAe-isDU-CqPMQnhZHCNGC-wvJ89PahDkSfYeq7NjWjjV2keymzSlsWo_KBIe_iPAKx62aMVXldzBEE5XuNnQfih23doNLmIGeCsVqV7bL7NHqJenCValt465IHteajkEXzOosG1O-zHzgRmbZt5Y3nw7Jr2J3pUnBlTlCqVSf5dV6rRJgQbB6zzAZttxU7dQli5PucDZE4co7slbpek-rxzJxrIAC0nT3UPIkt9hgY05TKjlaqoGLscpKwg7yv943ywnktG0NhjAw9RyN4LhvMU2i85VOOu-olja6HzdNqlk_cYf2_561Qx5RcsECWfPgxogEI9WeiqwkiPvcNSYLGidwwGmxmCzvG5vQzgncXmsvAjHcRP_vDmT7AON3gqHKZuuXko3r87tP5eyFqVqFaIRBoJlHR3frfRhHdYrzBTEMFhVC0shdWEykfW6erfVUrAd8SEzjJdr5tEhaEj3DLD-TjYz0nymEoF-WSkWEWf0fJOadTP0L3hNGXNRN6n2f1KSv3LQJiswvQmym7gbvE8cm1g7qAPRzEuEyeIVGUiA==" },
+  { no:10, title:"요즘 제일 핫한 닌자 유리 에어프라이어", cat:"주방", emoji:"🍟", img:"fryer", bg:"#fff0dc", price:197100, rocket:true, link:"https://link.coupang.com/a/imXXWGk7cO",
+    photo:"https://ads-partners.coupang.com/image1/92obt7oht0TKcZHw96mCItYBd_L3bMxHI_nH_q0xZx58Kl4gEtQbrXJKAvcLyjqyPMDUDD7SLM3TMtk_5EXevzeDtttg6JJJYw4r0Rt2B5BYEfRppR7dgFvW2RZpN7srhmWqKQIBjwWFX8-M94slykTnQWnssXaLPDiTJeKI8SerpuU42oYwbWyk21Da4FKjmDXhJfhmufqsxEuu_Y4mnHfPCPO7WuFAwZZ1YTE0kXWhWrx9CLHJ9cLDlbsUTeEZpO7j46zQDgBInlkiTKcV1OO8hBcrOcwswrVlGVhNaGWD-Bu8BKxROuNnrvsPbqa9DEyZJWkrQzwWH0ApUaCVS98NA5ok6J1e8u-oxxh15xgPGdJ1KqOnu_A6CecL9HOpotEGiiVNn6tEIao9PJM8sBQKwvL_1Jgv_LkZozvuqWiDBS65KNL3meTyeIG6rH3DDaym0XPU-uquIJljmhqx0Uo6fxqNrAi8ANdTwK6pDPharNEtaW0Qy_FJQx_OQxiuDY3JqNKxGviMFNtP9g==" },
+  { no:9, title:"한겨울 필수템 한일 탄소열선 전기요", cat:"겨울템", emoji:"🔥", img:"blanket", bg:"#ffe6e1", price:29800, rocket:true, link:"https://link.coupang.com/a/imXXWJcbDw",
+    photo:"https://ads-partners.coupang.com/image1/0PY-1Nn1yhiQBm110ETobORIn5R2ENgcdk5r4dYYgvVsfwrlAjvrm_TsPxicDVI6neju98NEWslS4t3rwTc_nYX_cJuTyR_j-PrbHkWjIbah_aGNIIhLEbd6c_XVrYoYrgEqyQZzUIJfE5rGpifSIEvYvhrQ9apQXSMiN3yWrcvo-Ch101kW7nOau1XA4ywkJHs5kQd8JB1If2HUAQZaQF9T_dS8SbpR5YSDA7q8I6b0humE4mxhBYNxApc-vmtoxtjlfF9wxLi3rg2fAuGQacPMgAjzIVJ08HmRBOUchIv8hrXOR22Df2fDxH2XNE2c5YPeCEUl47za2WR8ane7CWK_erUXs5JgdL6124W6JugkuNlDnImBTOG09S-6U5Q-inTH_cz2cXK3pc0wWRI5FhP-U4CdgWrfSNfPD8twARs-n1k8kkWnPDigS-s_nSdnfSiVLvupBIbEmxacSKiw_LpIVE5tFedQJNq-Ww12LP6KG4Y0DbTZ1EgBtILFz50zEnLcVqap3OlEQt2ZC05VYWQpORmkA0wh" },
+  { no:8, title:"1+1 폭신폭신 양털 체크 수면바지", cat:"겨울템", emoji:"🧦", img:"pants", bg:"#ffe9f3", price:16900, rocket:true, link:"https://link.coupang.com/a/imXXWPLoWa",
+    photo:"https://ads-partners.coupang.com/image1/R7hMxJF3m40LU6csR-DTE6npcwAf-sVc3FYjUt6j1DTGBlJwlMsUUq7FX78Hc0liv6lx_LcbWju2X8PAypDXZxUFh1wzkT5VjVuZAjGTD_Z7UFVwq2wfr5qj-jCjFo4ttz66Xkq4Z5E_9csR340UtQDE9SGUQCNvH-_HknnDL6Hs8KefkY6zane5ytuuUMQT9GtQygs2m9c7KnEBH7S_bLJeWG1zz8yvQK88-AEQIxCWFZOh9ALGDtlnYscrF6Eg_3htIK19FXOIkWhpG5wa94_17n5MX6KAPGomVHt3rmyI1JhqrGeiAIZ9Gxv27AY2Bf7mwo9m_kANXQX4bHV8h-xrRvUmZQF6nMnIJOI0--htfDUQyYpcIKOJbw8813oJ_RJlcdRIRILbs5jlaWK5RtM61kKmIJhfkZCjQeOMtLpyofliTmGwgZB9jbobGEyS1rAchjT1G-QokLd6WQa-C5IhUgf8ihvD3iGvpbHM6ap5HD6hgFOP_LCT1yqhGH3bvUFcxlN56sOB73mErKSaGVGjguxkTtN5NL50Nvy6V6AOY62Aew==" },
+  { no:7, title:"책상 정리되는 3in1 접이식 무선 충전 거치대", cat:"디지털", emoji:"🔌", img:"charger", bg:"#e8eef5", price:29800, rocket:true, link:"https://link.coupang.com/a/imXXWVoWei",
+    photo:"https://ads-partners.coupang.com/image1/F12U6A7a1WQw-K5AF-nB8DYJ89dcMyLMBRE-fu5VxyuSdBrKrVsVhzNlARJ67eV0nHisa7213nFL6Dydag-Xq7QJbg2papeMABEMNYOnO3FHS4MXsBlpR3YAouHukNONrd5e-zwv-Pow8RuK_Nc4hRoUPieWpCo6hdSDP3rX8MwVZzTEE_VZk4gWeRca_iQlvTtOoRWTb-hghasZJ4lf9SbX8r15oa1wQ7ABy-QIt8TadWrI8r9B9C8jd4FsqXUJPOsow4516YflGARimwcwQxrMbAWUXWt6lIec8ukqZ1dcOv1YrRqI3HTZH7zMc61lVQ2hzLaXgiDVZ6bS68WbgyegN8IscTjNny0r0Nuq2q3K0xjLS4f5nV5iddN7vbec83YmJohzLqCgWxna6uqT_uv-uD-KPwig54g7sCzxodAgfv-yF6jfQCeeMJyO3iXG2LYwm9UnKuDZvR1LGU-sSFB8XfLRM21RMlp6nClZ34D3LKb36Qj6jI49WlrdYS4a8615WQ5x6_RZ-VUIgw==" },
+  { no:6, title:"차박·캠핑 감성 3in1 LED 랜턴", cat:"감성템", emoji:"🏕️", img:"lantern", bg:"#e7f3e3", price:14750, rocket:true, link:"https://link.coupang.com/a/imXXW1mvXE",
+    photo:"https://ads-partners.coupang.com/image1/dJ62hGyva5rFVbh5dAdXb8XLGrx22MF_EeSglUvkZIaiaWJajvm5-5wcv1n46fIdZ2JFleQnKjX-XatrvG_qJUVhjLSLi69-KYIUC1-HUewQy1e6bcpALQ8EXyr2BQdRoKszdy9fVHH1Wb18Af3gOAtPEQllw-DDCv52ENwb6zbbbAK6zGDwrZ6VawgMvnnHqpsq-m_BPz1TnuEystb5kSj43KzrmY8JUfDknU4_LuOBVAvdk6jBhJIJXV9lCkca6IfT6TQHHIbv14C49LnJwsqFKJiACmxbhLXEbcpZ7m87msuTc-7pI6HjWErecHWYrkX1YFMv3whzLAf_Pz5Lq_yU0rfwzrI8_4z0l2cJblOHbsWvlUCmOz-XzwVn-2ZJ9WQO0Ud2H35mZHVDQj3iq5ODV4bcPhBRm-A2SAfNNB6FDxrHtTTJDlPTMKK7ZAurOmAN7Z37b3elDhJUCMjAmXOCL1glQUVD5bmqWFYOXgKM5Ay-O61kxfY5f1DiPOLzu_HFKiXwS_MAYpMwvjLiZscpPiwiVZgQz5jNpWuYG2wV290fn3eaNQ==" },
+  { no:5, title:"거실 분위기 바꾸는 빈티지 곡선 러그", cat:"감성템", emoji:"🧶", img:"rug", bg:"#f5ede3", price:29800, rocket:true, link:"https://link.coupang.com/a/imXXW70rdY",
+    photo:"https://ads-partners.coupang.com/image1/srOSWfBGsxm37hy0sppFhtAeNVqXSag8eOL1i8q4giI8K6ComjoW3PlQ-T0czwFCRuu3ZZ7R24LnIp3hraD8FjuumD-rCDAvRw5DrfJ7snh9iBc26sKdC0zK7RYW9bs8PCiPppbvOng3LJp41EHr3JE0k6IxrtAu_hXmfTB04mY9lZbyreBiF71ROPyc6DxDrNPOZunFTSFsfdq8LhCqmJySEMkDVHI0qEPJdB29mle94V1KNI6wv8dexz59Ln711CecpaWPPGXZvD8ssfS00jA3ss7Cw2u7oO5GIg6OaFVGprGBWLcAR051gJg3xc6EHBF1y7QlKB2WctyRnleGNO5s7pyX3EsYVIca-LcQZD8NFgqvRv6_9Xu8_Arniht-NqnufwdeO1NcC6m1prII8uCbcMSIa0MuLvGveAlmafmaw3o9bvNIdJtHSXiIldBXaIXAkym28rj0o23jAaKt4zEmCQe5ZcovhPakW2UX4dgm3p82-GEBo-e_bEX6n3sdFE0U2ka5q4M_pDOcN3zV9nPBLJp13V7ULa9JkjiG8kUmAByhNHE4Yyw=" },
+  { no:4, title:"하루종일 따뜻한 316스텐 보온 텀블러", cat:"생활", emoji:"☕", img:"tumbler", bg:"#efe8e1", price:18900, rocket:true, link:"https://link.coupang.com/a/imXXXeJ6nQ",
+    photo:"https://ads-partners.coupang.com/image1/GsQQjlDP87stDSAfGhPTsQKiigevqQE9tVvtxHYLhIEdMQ5YmtWNFdBtRbNp6RBK34ZRf8C6alLJuL6XsA8cHmL5sCw3PTJQKgXkw6oQY67vwgALKx14MUfVYjc9DsWvz3XibfU0Eh6KEOw9z0JQw_n0MLptpyDpO8GNjDqV1p0ra82xALhZ5HePObrWCFr8ca8741BmQxUiG41FaTHToiODb-hbl9lBYAY_4gDXfZdX3lo1beO7O_X06EN4i9w8e4PaLqUevvyE4J_ZmUMZ24jz6IOdSFoLtPIDBvpE98P9t-9lJfSZZPVZDt7Y89SYNgGZKA0zwjofDmHG4hG1X497i96ysH2XKK0DGiv4n8FfDP1zop-vu5Js1aqPOkIrhxV1PkZwtMqoWJ7UO5bvtQNK576RPwsLSmNVlY2z6XoHKBdVqAWgW5ElH0f-AqrjkH8tG5hA2QvNltl4ssn0yQwfb6hKxQO-Wq87dz2G7DfAHMkgsxtEvAUr7UdNN_OCI2E1OEBnadgjybmj_yY5F96UzYyc5_IsWqeiBCc=" },
+  { no:3, title:"주방이 깔끔해지는 미드센추리 철제 수납함", cat:"주방", emoji:"🧺", img:"box", bg:"#f0f4e6", price:38990, rocket:true, link:"https://link.coupang.com/a/imXXXjVAGG",
+    photo:"https://ads-partners.coupang.com/image1/CEMBEFnEhfd0CqGwCIKeVD5v1mC4JWcTcO279FGvkPEwIiVQE6WpJiY8VEdEIWk0YQ1PY48GsQONlXuJbWCFl0POPM4uJ5-9_Z_ckrIQcQhn5Wnjmcpz1abAAIaPV8smu6fqngy1eHR9cZZs3mZ1o8vq9cdlxHj2cxglDy85Y_rgWr6FQrixFSj4Q_R2TdvpSLgrxneylgSSDyvwrkUnC2dFPLPDNSXsnZVRm4o6Xh2x39Z4KrUZlvRTjv98fazRbVdS4rxNHB5af1ULo76m54WIc3csl2q-_2NIj8OTQZIR3cfjwKXKovffkZFgocBgDcHrP9Tal_mDr_hF2WGYgQdBEx3S3JvbcsuWLHYuGByfQj37I1OGoWbDaSeqqVQjjILsgXwbPqu09pprgHvu3RflMl-wpxmnTd15rnuuQ9baU5_1NZntLXgvOi6IxXLJxk1DXWITGxW1OKGtHrQiz2v-lUNWyhbiOv33e8roqdvih_ZhIBhrHFtt8WHFWMtfM4y1e-LdE9VhDe4jsNC2_yW6otGbkvxemOfUeiBUzg==" },
+  { no:2, title:"손목 편한 유그린 버티컬 무선 마우스", cat:"디지털", emoji:"🖱️", img:"mouse", bg:"#e9ecf2", price:22500, rocket:true, link:"https://link.coupang.com/a/imXXXpbJK0",
+    photo:"https://ads-partners.coupang.com/image1/exMdzcUhv8j-oJm7ey-NGTGlemD1XKUVGwX4q65lKES-gO9jhnjVSiTnN9hVSaeC_60Xz9aHZ7q3N_VS6LWoBc_xfgUGNmQuKs-5MorUe-LFs3nCedSN9FQP9G1kg87Y8Nxs5b6EmhaVEmEDmzWpTRPa4IKFKDc9GTjagBI8rOZTBl-PiThiXZCWjE7JO-zBJLSk0MIMNMq73dDGYmDXDFo98rM3rw2rdVv_0HMAnKDK8m2j7pbACMN_bbdDiY7rNDBupxdDHt6DqIxiL1s8vuH3tL3FmO8PGdP0qERNco1pFFeayc8YVLLxX2ISS8kDPa5dYHMax16QruYrqjmazmRmWkLWWuPonmtYazCZe_evOopJjkfmeHsfh-bxLYrCmG_wcvO-cRMpDLKyNnReIkbO8dwNEG3Zyd-jCmTQEFmLT_g8xHhLwMCBwX7jx6y_itJ6bzbtwQz0wrLCiKI_1NuVrS7yu4hzgt9JHuoS9q0yAgXSdHDdajlZm5XNyuv1ZRK6c2lul5Z-cck_6VY5X__V-45QkvzLIMjU57mZLPM1igs6IyxxDhtD_tZrGwBM0WpD8zZ8bXqQAD9GE5GOexenjLbudDTTgHJQfBo7" },
+  { no:1, title:"방 안 가득 은은한 향, 디퓨저 3개 세트", cat:"생활", emoji:"🌿", img:"diffuser", bg:"#e5f3ec", price:27790, rocket:true, link:"https://link.coupang.com/a/imXXXvJASy",
+    photo:"https://ads-partners.coupang.com/image1/OTqaqdYl26gKc3OaOZ-Bn-2x2ST3Y-VWGQoeivmN-LBUd_28rx7tTwClDYb4qIat7cQt9Wb3OQpNh2MRou7HhMuLPbb60ha-d0ooJyugLxBYX4ueC8DZ_cWFh2Lgg3MkJjT8atVwgHvsSno3CB9MVa8GLUyik7Jv5QuthvUDkoW0w6mzg_IPaQz0Pl5rVl5QOb6kBtan-cBaYzkF8lZARUc4MF1AGY8BwNdK2wdtb_OLYW6NW-3ZF5_bXnMx3147uYbtEdm_ZFjRU_VAPmGVAfUtPLPiqByB7VstHbyVjbzDeE8nzSlS7xyjotx5KvY46Ed1Tif2KyA7_W73lK1lXVgS2yPZ_BkL9SU7C619pQkITK-MqgAqAp4QMhjBVOaQ1HYzyxr70ayf65IkWvgjbYUdVwLIU8oOK1_yPFzuZNE9ORm8ZyT0AfypW6gAQ-F-NGO3Afgty8qU6kXbAC_qaAFTzGvoRT3s3g8VZ6NFll-bPEetx-QXmkxKxp4qwALagJaITlQ=" },
 ];
 
 
@@ -164,8 +182,8 @@ const THUMB={
  chat:S(`<path d="M14 36c0-12 12-20 26-20s26 8 26 20-12 20-26 20c-3 0-6 0-8-1l-12 7 3-11c-6-4-9-9-9-15z" fill="#3c1e1e"/><circle cx="30" cy="36" r="3" fill="#ffe14d"/><circle cx="40" cy="36" r="3" fill="#ffe14d"/><circle cx="50" cy="36" r="3" fill="#ffe14d"/><path d="M58 12l4 4M66 22h-5M52 8v5" stroke="#f5b400" stroke-width="2.5" stroke-linecap="round"/>`),
 };
 
-const CATS = ["전체","특가","감성템","생활","주방","디지털","패션"];
-const CAT_ICON = {"전체":"","특가":"🔥 ","감성템":"✨ ","생활":"🏠 ","주방":"🍳 ","디지털":"💻 ","패션":"👕 "};
+const CATS = ["전체","겨울템","감성템","생활","주방","디지털"];
+const CAT_ICON = {"전체":"","겨울템":"❄️ ","감성템":"✨ ","생활":"🏠 ","주방":"🍳 ","디지털":"💻 "};
 const BIZ_EMAIL = "hseojun7@naver.com";
 
 /* ===================== 아래는 건드리지 않아도 돼요 ===================== */
@@ -176,10 +194,13 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":
 
 function card(p, isPin){
   const tags = isPin ? (p.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join("")
-    : `<span class="tag ${p.cat==="특가"?"hot":""}">${CAT_ICON[p.cat]||""}${esc(p.cat)}</span>`;
+    : [`<span class="tag ${p.cat==="겨울템"?"hot":""}">${CAT_ICON[p.cat]||""}${esc(p.cat)}</span>`,
+       p.price ? `<span class="tag price">${p.price.toLocaleString("ko-KR")}원</span>` : "",
+       p.rocket ? `<span class="tag rocket">🚀 로켓배송</span>` : ""].join("");
   const title = isPin ? esc(p.title) : `[${pad(p.no)}] ${esc(p.title)}`;
+  const thumb = p.photo ? `<img src="${esc(p.photo)}" alt="" loading="lazy" data-fb="${esc(p.img||"")}">` : (THUMB[p.img]||p.emoji);
   return `<a class="card ${isPin?"pin":""}" href="${esc(p.link)}" target="_blank" rel="noopener sponsored">
-    <div class="thumb" style="background:${p.bg}">${THUMB[p.img]||p.emoji}</div>
+    <div class="thumb ${p.photo?"photo":""}" style="background:${p.bg}">${thumb}</div>
     <div class="info"><div class="title">${title}</div><div class="meta">${tags}</div></div>
     <div class="arrow">›</div></a>`;
 }
@@ -206,6 +227,12 @@ $("chips").addEventListener("click", e=>{
   render();
 });
 $("q").addEventListener("input", render);
+
+/* 상품 사진이 안 열리면 그림 썸네일로 대신 보여줘요 */
+document.addEventListener("error", e => {
+  const im = e.target;
+  if (im.tagName === "IMG" && im.dataset.fb !== undefined) im.parentElement.innerHTML = THUMB[im.dataset.fb] || "🛍️";
+}, true);
 
 let tt;
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),2200); }
