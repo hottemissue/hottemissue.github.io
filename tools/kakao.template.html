@@ -62,7 +62,7 @@
 
 <script>
 /* 아래 DATA는 tools/deals.ps1이 매시간 쿠팡 데이터로 채워요. 직접 고치지 않아도 돼요. */
-const DATA = /*DATA*/{"updated":"","days":30,"dropPct":20,"superPct":50,"minDays":3,"cats":[],"deals":[]}/*END*/;
+const DATA = /*DATA*/{"updated":"","days":30,"dropPct":20,"superPct":50,"minDays":3,"underPrice":10000,"cats":[],"deals":[]}/*END*/;
 
 const DISCLOSURE = "이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.";
 const won = n => Math.round(n).toLocaleString("ko-KR") + "원";
@@ -99,6 +99,7 @@ const FILTERS = [
   { id:"new",  label:"🆕 새로 들어온",   test:d => d.isNew },
   { id:"drop", label:"📉 가격 급락",     test:d => d.type === "drop" },
   { id:"low",  label:"🏷️ 최저가",        test:d => d.type === "low" || d.low },
+  { id:"cheap", label:"💰 1만원 이하",   test:d => d.price <= DATA.underPrice },
   { id:"gold", label:"🔥 골드박스",      test:d => d.type === "gold" },
   ...DATA.cats.map(c => ({ id:"cat:" + c, label:"🏆 " + c, test:d => d.type === "best" && d.cat === c })),
 ];
@@ -123,7 +124,7 @@ if (DATA.updated) {
   const [, m, day] = d.split("-").map(Number);
   const c = t => DATA.deals.filter(x => x.type === t).length;
   const lows = DATA.deals.filter(x => x.type === "low" || x.low).length;
-  $("when").innerHTML = `${m}월 ${day}일 ${t} 업데이트 · 30분마다 자동으로 바뀌어요<br>${c("super") ? `⚡ 초특급 ${c("super")} · ` : ""}급락 ${c("drop")} · 최저가 ${lows} · 골드박스 ${c("gold")} · 카테고리 베스트 ${c("best")}`;
+  $("when").innerHTML = `${m}월 ${day}일 ${t} 업데이트 · 10분마다 자동으로 바뀌어요<br>${c("super") ? `⚡ 초특급 ${c("super")} · ` : ""}급락 ${c("drop")} · 최저가 ${lows} · 골드박스 ${c("gold")} · 카테고리 베스트 ${c("best")}`;
 }
 
 function card(d, i){
@@ -141,7 +142,7 @@ function card(d, i){
     <div class="top">
       <img src="${esc(d.image)}" alt="" loading="lazy">
       <div>
-        <div class="tags">${d.isNew ? `<span class="tag new">NEW</span>` : ""}${tag}${d.rocket ? `<span class="tag">🚀 로켓</span>` : ""}</div>
+        <div class="tags">${d.isNew ? `<span class="tag new">NEW</span>` : ""}${tag}${d.price <= DATA.underPrice ? `<span class="tag gold">💰 1만원 이하</span>` : ""}${d.rocket ? `<span class="tag">🚀 로켓</span>` : ""}</div>
         <div class="name">${esc(d.name)}</div>
         <div class="price">${price}</div>
       </div>

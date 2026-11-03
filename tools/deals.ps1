@@ -1,6 +1,7 @@
-﻿# 30분마다: 쿠팡 골드박스 + 카테고리 베스트(약 1,500개)를 가져와 가격을 기록하고,
+﻿# 10분마다: 쿠팡 골드박스 + 카테고리 베스트(약 1,500개)를 가져와 가격을 기록하고,
 # 최근 30일 최고가보다 많이 떨어졌거나 30일 최저가를 새로 찍은 상품을 찾아
 # 카톡에 붙여넣을 글 페이지(kakao.html)를 만들어요.
+# 순서는 할인율이 먼저이고, 1만원 이하 상품은 할인율에 보너스 점수를 더해서 조금 더 앞에 둬요.
 #   .\tools\deals.ps1
 param(
   [int]$GoldCount = 10,     # 골드박스에서 몇 개
@@ -12,7 +13,10 @@ param(
   [int]$SuperPct = 50,      # 최고가보다 몇 % 이상 떨어지면 초특급(바로 긴급 알림)으로 볼지
   [int]$DropPct = 20,       # 최고가보다 몇 % 이상 떨어지면 급락으로 볼지
   [int]$Days = 30,          # 최근 며칠 기록과 비교할지
-  [int]$MinDays = 3         # 최저가라고 말하려면 며칠치 기록이 있어야 하는지
+  [int]$MinDays = 3,        # 최저가라고 말하려면 며칠치 기록이 있어야 하는지
+  [int]$UnderPrice = 10000, # 이 가격 이하면 우대
+  [int]$UnderBonus = 5,     # 우대 상품 할인율에 더할 점수 (예: 25% 할인 + 5 = 30점)
+  [int]$NotifyEvery = 60    # 일반 알림은 몇 분에 한 번 모아서 보낼지 (초특급은 바로)
 )
 
 $ErrorActionPreference = "Stop"
@@ -84,7 +88,8 @@ foreach ($p in @($gold) + @($best)) {
   $pct = if ($was -gt $price) { [int][Math]::Floor(100 * ($was - $price) / $was) } else { 0 }
   $isLow = ($pastDays -ge $MinDays) -and ($price -lt $prevMin)
   if ($pct -ge $DropPct -or $isLow) {
-    $signals += [pscustomobject]@{ p = $p; was = $was; pct = $pct; low = $isLow; prevMin = $(if ($isLow) { $prevMin } else { 0 }); span = $span }
+    $score = $pct + $(if ($price -le $UnderPrice) { $UnderBonus } else { 0 })
+    $signals += [pscustomobject]@{ p = $p; was = $was; pct = $pct; score = $score; low = $isLow; prevMin = $(if ($isLow) { $prevMin } else { 0 }); span = $span }
   }
 
   if ($hist.ContainsKey($today)) { $t = $hist[$today]; $hist[$today] = @([Math]::Min($t[0], $price), [Math]::Max($t[1], $price)) }
@@ -102,10 +107,10 @@ function Add-Pick($type, $p, $extra) {
   foreach ($k in $extra.Keys) { $entry[$k] = $extra[$k] }
   $script:sel += $entry
 }
-function Signal-Extra($x) { @{ was = $x.was; pct = $x.pct; low = $x.low; prevMin = $x.prevMin; span = $x.span } }
-foreach ($x in ($signals | Where-Object { $_.pct -ge $SuperPct } | Sort-Object pct -Descending | Select-Object -First $MaxSupers)) { Add-Pick "super" $x.p (Signal-Extra $x) }
-foreach ($x in ($signals | Where-Object { $_.pct -ge $DropPct -and $_.pct -lt $SuperPct } | Sort-Object pct -Descending | Select-Object -First $MaxDrops)) { Add-Pick "drop" $x.p (Signal-Extra $x) }
-foreach ($x in ($signals | Where-Object { $_.low -and $_.pct -lt $DropPct } | Sort-Object pct -Descending | Select-Object -First $MaxLows)) { Add-Pick "low" $x.p (Signal-Extra $x) }
+function Signal-Extra($x) { @{ was = $x.was; pct = $x.pct; score = $x.score; low = $x.low; prevMin = $x.prevMin; span = $x.span } }
+foreach ($x in ($signals | Where-Object { $_.pct -ge $SuperPct } | Sort-Object score -Descending | Select-Object -First $MaxSupers)) { Add-Pick "super" $x.p (Signal-Extra $x) }
+foreach ($x in ($signals | Where-Object { $_.pct -ge $DropPct -and $_.pct -lt $SuperPct } | Sort-Object score -Descending | Select-Object -First $MaxDrops)) { Add-Pick "drop" $x.p (Signal-Extra $x) }
+foreach ($x in ($signals | Where-Object { $_.low -and $_.pct -lt $DropPct } | Sort-Object score -Descending | Select-Object -First $MaxLows)) { Add-Pick "low" $x.p (Signal-Extra $x) }
 foreach ($p in ($gold | Sort-Object @{ Expression = { -not $_.isRocket } }, rank | Select-Object -First $GoldCount)) { Add-Pick "gold" $p @{} }
 foreach ($c in $CATS.Keys) {
   foreach ($p in ($best | Where-Object { [string]$_.categoryId -eq $c } | Sort-Object rank | Select-Object -First $BestPerCat)) { Add-Pick "best" $p @{ cat = $CATS[$c] } }
@@ -149,7 +154,7 @@ $deals = foreach ($s in $sel) {
   [pscustomobject]@{
     key = $key; type = $s.type; name = $p.productName; price = [int][double]$p.productPrice
     image = $p.productImage; rocket = [bool]$p.isRocket; link = $link
-    cat = $s.cat; rank = [int]$p.rank; was = $s.was; pct = $s.pct
+    cat = $s.cat; rank = [int]$p.rank; was = $s.was; pct = $s.pct; score = $s.score
     low = [bool]$s.low; prevMin = $s.prevMin; span = $s.span
     isNew = (-not $firstRun) -and (-not $prev.ContainsKey($key))
   }
@@ -159,7 +164,7 @@ Save-Json "state.json" @{ keys = @($deals | ForEach-Object { $_.key }) }
 
 # 6) kakao.html 만들기
 $data = [pscustomobject]@{
-  updated = $kst.ToString("yyyy-MM-dd HH:mm"); days = $Days; dropPct = $DropPct; superPct = $SuperPct; minDays = $MinDays
+  updated = $kst.ToString("yyyy-MM-dd HH:mm"); days = $Days; dropPct = $DropPct; superPct = $SuperPct; minDays = $MinDays; underPrice = $UnderPrice
   cats = @($CATS.Values); deals = $deals
 } | ConvertTo-Json -Depth 5 -Compress
 $tpl = [IO.File]::ReadAllText((Join-Path $PSScriptRoot "kakao.template.html"), [Text.Encoding]::UTF8)
@@ -167,40 +172,62 @@ $html = [regex]::Replace($tpl, '(?s)/\*DATA\*/.*?/\*END\*/', { param($m) "/*DATA
 [IO.File]::WriteAllText((Join-Path $root "kakao.html"), $html, $utf8)
 
 # 7) 휴대폰 알림 내용 (보내는 건 tools/notify.ps1이 사이트가 새로 올라간 뒤에 해요)
-#    - 새 초특급($SuperPct% 이상)은 시간 상관없이 '긴급' 알림으로 따로
-#    - 새 급락, 새 최저가, 새 골드박스(3개 이상)는 보통 알림 하나로 묶어서
+#    - 새 초특급($SuperPct% 이상)은 시간 상관없이 바로 '긴급' 알림
+#    - 나머지 새 딜(급락, 최저가, 골드박스)은 data/notify.json에 모아 뒀다가
+#      마지막 알림 뒤 $NotifyEvery분이 지나면 한 번에 묶어서 알림
 $notifyFile = Join-Path $env:TEMP "hottem-notify.json"
 if (Test-Path $notifyFile) { Remove-Item $notifyFile }
 $page = "https://hottemissue.github.io/kakao.html"
-$line = { param($d) "-{0}% {1} {2:N0}원" -f $d.pct, $d.name, $d.price }
-$newSupers = @($deals | Where-Object { $_.isNew -and $_.type -eq "super" } | Sort-Object pct -Descending)
-$newDrops = @($deals | Where-Object { $_.isNew -and $_.type -eq "drop" } | Sort-Object pct -Descending)
-$newLows = @($deals | Where-Object { $_.isNew -and $_.type -eq "low" })
-$newGold = @($deals | Where-Object { $_.isNew -and $_.type -eq "gold" })
+$line = { param($d) "-{0}% {1}{2} {3:N0}원" -f $d.pct, $(if ($d.price -le $UnderPrice) { "💰" } else { "" }), $d.name, $d.price }
 $notes = @()
+
+$newSupers = @($deals | Where-Object { $_.isNew -and $_.type -eq "super" } | Sort-Object score -Descending)
 if ($newSupers.Count) {
   $notes += [pscustomobject]@{
-    title = "⚡ 초특급 최대 -$($newSupers[0].pct)% · $($newSupers.Count)개 떴어요"
+    title = "⚡ 초특급 최대 -$(($newSupers | Measure-Object pct -Maximum).Maximum)% · $($newSupers.Count)개 떴어요"
     message = (@($newSupers | Select-Object -First 3 | ForEach-Object { & $line $_ })) -join "`n"
     click = $page; priority = 5; tags = @("rotating_light")
   }
 }
-if ($newDrops.Count -or $newLows.Count -or $newGold.Count -ge 3) {
-  $parts = @()
-  if ($newDrops.Count) { $parts += "📉 급락 $($newDrops.Count)개" }
-  if ($newLows.Count) { $parts += "🏷️ 최저가 $($newLows.Count)개" }
-  if ($newGold.Count) { $parts += "🔥 골드박스 $($newGold.Count)개" }
-  $lines = @($newDrops | ForEach-Object { & $line $_ })
-  $lines += @($newLows | ForEach-Object { "최저가 {0} {1:N0}원" -f $_.name, $_.price })
-  if (-not $lines.Count) { $lines = @($newGold | ForEach-Object { "{0} {1:N0}원" -f $_.name, $_.price }) }
-  $notes += [pscustomobject]@{
-    title = ($parts -join " · ") + " 새로 올라왔어요"
-    message = ($lines | Select-Object -First 3) -join "`n"
-    click = $page
-    priority = $(if (@($newDrops | Where-Object { $_.pct -ge 30 }).Count) { 4 } else { 3 })
-    tags = @("shopping_cart")
+
+# 모아둔 딜 (딜 키 -> 처음 찾은 시각). 그새 페이지에서 빠진 딜은 버려요.
+$ns = Read-Hash "notify.json"
+$pending = @{}
+if ($ns.pending) { foreach ($p in $ns.pending.PSObject.Properties) { $pending[$p.Name] = $p.Value } }
+foreach ($d in $deals) {
+  if ($d.isNew -and ($d.type -in @("drop", "low", "gold")) -and -not $pending.ContainsKey($d.key)) { $pending[$d.key] = $kst.ToString("yyyy-MM-dd HH:mm") }
+}
+$onPage = @{}
+foreach ($d in $deals) { $onPage[$d.key] = $d }
+foreach ($k in @($pending.Keys)) { if (-not $onPage.ContainsKey($k)) { $pending.Remove($k) } }
+
+$lastSent = if ($ns.lastSent) { [datetime]::ParseExact([string]$ns.lastSent, "yyyy-MM-dd HH:mm", $null) } else { [datetime]::MinValue }
+if (($kst - $lastSent).TotalMinutes -ge $NotifyEvery - 5) {
+  $ready = @($pending.Keys | ForEach-Object { $onPage[$_] })
+  $drops = @($ready | Where-Object { $_.type -in @("drop", "low") } | Sort-Object score -Descending)
+  $golds = @($ready | Where-Object { $_.type -eq "gold" })
+  if ($drops.Count -or $golds.Count -ge 3) {
+    $parts = @()
+    $nd = @($drops | Where-Object { $_.type -eq "drop" }).Count
+    $nl = @($drops | Where-Object { $_.type -eq "low" }).Count
+    if ($nd) { $parts += "📉 급락 $nd" }
+    if ($nl) { $parts += "🏷️ 최저가 $nl" }
+    if ($golds.Count) { $parts += "🔥 골드박스 $($golds.Count)" }
+    $lines = @($drops | Select-Object -First 5 | ForEach-Object { & $line $_ })
+    if (-not $lines.Count) { $lines = @($golds | Select-Object -First 3 | ForEach-Object { "{0} {1:N0}원" -f $_.name, $_.price }) }
+    $top = if ($drops.Count) { " · 최대 -$(($drops | Measure-Object pct -Maximum).Maximum)%" } else { "" }
+    $notes += [pscustomobject]@{
+      title = "⏰ 새 딜 모음 (" + ($parts -join " · ") + ")$top"
+      message = $lines -join "`n"
+      click = $page
+      priority = $(if (@($drops | Where-Object { $_.pct -ge 30 }).Count) { 4 } else { 3 })
+      tags = @("shopping_cart")
+    }
+    $lastSent = $kst
+    $pending = @{}
   }
 }
+Save-Json "notify.json" @{ lastSent = $(if ($lastSent -gt [datetime]::MinValue) { $lastSent.ToString("yyyy-MM-dd HH:mm") } else { "" }); pending = $pending }
 if ($notes.Count) { [IO.File]::WriteAllText($notifyFile, (ConvertTo-Json -InputObject @($notes) -Depth 4 -Compress), $utf8) }
 
 $count = { param($t) @($deals | Where-Object { $_.type -eq $t }).Count }
