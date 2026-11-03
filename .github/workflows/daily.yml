@@ -1,14 +1,19 @@
 # 10분마다 쿠팡 골드박스 + 카테고리 베스트를 가져와 가격을 기록하고,
 # 가격이 떨어진 상품까지 골라 kakao.html(카톡 글 페이지)을 새로 만들어 올려요.
 # 일반 알림은 새 딜을 모아서 1시간에 한 번, 초특급(50% 이상 급락)은 바로 긴급 알림을 보내요.
+# GitHub 예약 실행은 45~60분 간격으로 늦어져서, 한 번 실행될 때 안에서 10분 간격으로 6번 확인해요.
+# 한 실행이 끝나면 대기 중이던 다음 실행이 이어서 시작돼요 (concurrency).
 # API 키는 저장소 Settings > Secrets and variables > Actions 에 넣어둔 값을 써요.
 name: 10분마다 핫딜 카톡 글
 
 on:
   schedule:
-    - cron: "2,12,22,32,42,52 * * * *"  # 10분마다 (GitHub 사정으로 조금 늦을 수 있어요)
+    - cron: "2,32 * * * *"  # 다음 실행을 대기시켜 두는 용도 (실제 확인 간격은 run-checks.ps1이 맞춰요)
   workflow_dispatch:        # Actions 탭에서 'Run workflow'로 바로 돌릴 수도 있어요.
     inputs:
+      checks:
+        description: "몇 번 확인할지 (10분 간격)"
+        default: "1"
       test_notify:
         description: "시험 알림 보내기"
         type: boolean
@@ -25,45 +30,15 @@ concurrency:
 jobs:
   update:
     runs-on: windows-latest
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v5
 
-      - name: 핫딜 가져와서 kakao.html 만들기
+      - name: 핫딜 확인하고 올리기
         shell: powershell
         env:
           COUPANG_ACCESS_KEY: ${{ secrets.COUPANG_ACCESS_KEY }}
           COUPANG_SECRET_KEY: ${{ secrets.COUPANG_SECRET_KEY }}
-        run: ./tools/deals.ps1
-
-      - name: 쓰레드에 올린 상품을 메인 페이지에 넣기
-        shell: powershell
-        continue-on-error: true
-        env:
           THREADS_BOT_READ: ${{ secrets.THREADS_BOT_READ }}
-          COUPANG_ACCESS_KEY: ${{ secrets.COUPANG_ACCESS_KEY }}
-          COUPANG_SECRET_KEY: ${{ secrets.COUPANG_SECRET_KEY }}
-        run: ./tools/threads-sync.ps1
-
-      - name: GitHub에 올리기
-        shell: powershell
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add kakao.html data threads-products.js
-          git diff --cached --quiet
-          if ($LASTEXITCODE -ne 0) {
-            git commit -m "Update hourly deals"
-            git pull --rebase -q
-            git push
-            if ($LASTEXITCODE -ne 0) { exit 1 }
-            # 사이트는 push만으로 다시 빌드돼요 (따로 빌드 요청을 하면 두 번 빌드돼서 GitHub 한도에 걸려요)
-          }
-          exit 0
-
-      - name: 휴대폰 알림 보내기
-        shell: powershell
-        env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-        run: if ("${{ inputs.test_notify }}" -eq "true") { ./tools/notify.ps1 -Test } else { ./tools/notify.ps1 }
+        run: ./tools/run-checks.ps1 -Checks ${{ github.event_name == 'schedule' && 6 || inputs.checks || 1 }} ${{ inputs.test_notify && '-TestNotify' || '' }}
