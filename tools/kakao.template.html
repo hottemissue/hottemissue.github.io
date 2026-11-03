@@ -71,24 +71,42 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":
 /* 가격이 떨어진 정도(최근 며칠 최고가 대비)에 따라 등급 */
 const grade = p => p >= 50 ? "⚡ 역대급 🚨🚨🚨🚨🚨" : p >= 40 ? "초특급대박 🚨🚨🚨🚨🚨" : p >= 30 ? "초대박 🚨🚨🚨🚨" : p >= 20 ? "대박 🚨🚨🚨" : "가격 급락 🚨🚨";
 
+/* '최근 N일'은 실제로 가격을 기록한 기간이에요 (기록이 30일 안 됐으면 그만큼만) */
+const period = s => s > 1 ? `최근 ${s}일` : "오늘";
+
+/* 글 위쪽에 눈에 띄게 넣는 한 줄 (할인율·최저가는 핫템이슈가 기록한 쿠팡 가격 기준) */
+function hook(d){
+  const isDrop = d.type === "drop" || d.type === "super";
+  return [
+    ...(d.type === "super" ? [`😱 ${period(d.span)} 최고가 대비 ${d.pct}% 할인이래! 역대급이야`] : []),
+    ...(d.type === "drop"  ? [`🔥 ${period(d.span)} 최고가 대비 ${d.pct}% 할인이래!`] : []),
+    ...(d.type === "low" || (isDrop && d.low) ? [`📉 ${period(d.span)} 중에 최저가야!`] : []),
+    ...(d.type === "gold"  ? ["⏰ 오늘의 골드박스 특가래!"] : []),
+    ...(d.type === "best"  ? [`🏆 쿠팡 ${d.cat} 베스트 ${d.rank}위래!`] : []),
+  ];
+}
+
 /* 카톡에 올릴 글 모양 */
 function message(d){
   const counts = d.name.match(/(\d+)\s*개(?!월)/g) || [];
   const n = counts.length === 1 ? parseInt(counts[0], 10) : 0;
   const unit = n > 1 ? ` (개당 ${won(d.price / n)})` : "";
-  /* '최근 N일'은 실제로 가격을 기록한 기간이에요 (기록이 30일 안 됐으면 그만큼만) */
-  const head =
-    d.type === "drop" || d.type === "super" ? [`↳ ${grade(d.pct)} ${won(d.price)}${unit}`, `    최근 ${d.span}일 최고 ${won(d.was)}보다 ${d.pct}% 내렸어요`,
-                         ...(d.low ? [`    🏷️ 최근 ${d.span}일 중 최저가예요`] : [])] :
-    d.type === "low"  ? [`↳ 🏷️ 최근 ${d.span}일 최저가 ${won(d.price)}${unit}`, `    지금까지 최저 ${won(d.prevMin)}보다 더 내렸어요`] :
-    d.type === "gold" ? [`↳ 🔥 골드박스 특가 ${won(d.price)}${unit}`] :
-                        [`↳ 🏆 ${d.cat} 베스트 ${d.rank}위 ${won(d.price)}${unit}`];
+  const isDrop = d.type === "drop" || d.type === "super";
+  const priceLines =
+    isDrop             ? [`↳ ${grade(d.pct)} ${won(d.price)}${unit}`, `    ${won(d.was)} → ${won(d.price)} (${d.pct}%↓)`] :
+    d.type === "low"   ? [`↳ 🏷️ 최저가 ${won(d.price)}${unit}`, `    이전 최저 ${won(d.prevMin)} → ${won(d.price)}`] :
+    d.type === "gold"  ? [`↳ 🔥 골드박스 특가 ${won(d.price)}${unit}`] :
+                         [`↳ 🏆 ${d.cat} 베스트 ${d.rank}위 ${won(d.price)}${unit}`];
+  const basis = !(isDrop || d.type === "low") ? "✔️ 올린 시점의 쿠팡 판매가 기준이에요."
+    : d.span > 1 ? `✔️ 할인율·최저가는 최근 ${d.span}일 동안 기록한 쿠팡 판매가 기준이에요.`
+    : "✔️ 할인율은 오늘 기록한 쿠팡 판매가 기준이에요.";
   return [
     DISCLOSURE, "",
-    `☑️ ${d.name}`, ...head,
+    ...hook(d), "",
+    `☑️ ${d.name}`, ...priceLines,
     ...(d.rocket ? ["🚀 로켓배송"] : []),
     "", d.link, "",
-    "✔️ 올린 시점의 쿠팡 판매가 기준이에요.",
+    basis,
     "✔️ 인기 딜은 빨리 품절되거나 가격이 바뀔 수 있어요!",
   ].join("\n");
 }
