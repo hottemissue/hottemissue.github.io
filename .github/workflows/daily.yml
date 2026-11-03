@@ -1,11 +1,12 @@
-# 매시간 쿠팡 골드박스 + 카테고리 베스트를 가져와 가격을 기록하고,
+# 30분마다 쿠팡 골드박스 + 카테고리 베스트를 가져와 가격을 기록하고,
 # 가격이 떨어진 상품까지 골라 kakao.html(카톡 글 페이지)을 새로 만들어 올려요.
+# 초특급(50% 이상 급락)이 뜨면 시간 상관없이 바로 긴급 알림을 보내요.
 # API 키는 저장소 Settings > Secrets and variables > Actions 에 넣어둔 값을 써요.
-name: 매시간 핫딜 카톡 글
+name: 30분마다 핫딜 카톡 글
 
 on:
   schedule:
-    - cron: "7 * * * *"    # 매시간 7분쯤 (GitHub 사정으로 조금 늦을 수 있어요)
+    - cron: "7,37 * * * *"  # 매시 7분, 37분쯤 (GitHub 사정으로 조금 늦을 수 있어요)
   workflow_dispatch:        # Actions 탭에서 'Run workflow'로 바로 돌릴 수도 있어요.
     inputs:
       test_notify:

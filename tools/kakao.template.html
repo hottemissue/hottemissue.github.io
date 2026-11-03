@@ -34,6 +34,8 @@
   .tag.gold{background:#fff3d6;color:#a86a00}
   .tag.best{background:#e9f1ff;color:var(--blue)}
   .tag.new{background:var(--accent);color:#fff}
+  .tag.super{background:#16181d;color:#ffe14d}
+  .deal.super{box-shadow:0 0 0 2px var(--accent),0 2px 12px rgba(20,24,40,.08)}
   .name{font-size:14.5px;font-weight:500;line-height:1.4;word-break:keep-all;margin-top:4px}
   .price{font-weight:900;margin-top:2px}
   .price s{color:var(--sub);font-weight:400;font-size:13px;margin-right:6px}
@@ -60,14 +62,14 @@
 
 <script>
 /* 아래 DATA는 tools/deals.ps1이 매시간 쿠팡 데이터로 채워요. 직접 고치지 않아도 돼요. */
-const DATA = /*DATA*/{"updated":"","days":30,"dropPct":20,"minDays":3,"cats":[],"deals":[]}/*END*/;
+const DATA = /*DATA*/{"updated":"","days":30,"dropPct":20,"superPct":50,"minDays":3,"cats":[],"deals":[]}/*END*/;
 
 const DISCLOSURE = "이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.";
 const won = n => Math.round(n).toLocaleString("ko-KR") + "원";
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 /* 가격이 떨어진 정도(최근 며칠 최고가 대비)에 따라 등급 */
-const grade = p => p >= 40 ? "초특급대박 🚨🚨🚨🚨🚨" : p >= 30 ? "초대박 🚨🚨🚨🚨" : p >= 20 ? "대박 🚨🚨🚨" : "가격 급락 🚨🚨";
+const grade = p => p >= 50 ? "⚡ 역대급 🚨🚨🚨🚨🚨" : p >= 40 ? "초특급대박 🚨🚨🚨🚨🚨" : p >= 30 ? "초대박 🚨🚨🚨🚨" : p >= 20 ? "대박 🚨🚨🚨" : "가격 급락 🚨🚨";
 
 /* 카톡에 올릴 글 모양 */
 function message(d){
@@ -76,7 +78,7 @@ function message(d){
   const unit = n > 1 ? ` (개당 ${won(d.price / n)})` : "";
   /* '최근 N일'은 실제로 가격을 기록한 기간이에요 (기록이 30일 안 됐으면 그만큼만) */
   const head =
-    d.type === "drop" ? [`↳ ${grade(d.pct)} ${won(d.price)}${unit}`, `    최근 ${d.span}일 최고 ${won(d.was)}보다 ${d.pct}% 내렸어요`,
+    d.type === "drop" || d.type === "super" ? [`↳ ${grade(d.pct)} ${won(d.price)}${unit}`, `    최근 ${d.span}일 최고 ${won(d.was)}보다 ${d.pct}% 내렸어요`,
                          ...(d.low ? [`    🏷️ 최근 ${d.span}일 중 최저가예요`] : [])] :
     d.type === "low"  ? [`↳ 🏷️ 최근 ${d.span}일 최저가 ${won(d.price)}${unit}`, `    지금까지 최저 ${won(d.prevMin)}보다 더 내렸어요`] :
     d.type === "gold" ? [`↳ 🔥 골드박스 특가 ${won(d.price)}${unit}`] :
@@ -93,6 +95,7 @@ function message(d){
 
 const FILTERS = [
   { id:"all",  label:"전체",            test:() => true },
+  { id:"super", label:"⚡ 초특급",       test:d => d.type === "super" },
   { id:"new",  label:"🆕 새로 들어온",   test:d => d.isNew },
   { id:"drop", label:"📉 가격 급락",     test:d => d.type === "drop" },
   { id:"low",  label:"🏷️ 최저가",        test:d => d.type === "low" || d.low },
@@ -113,27 +116,28 @@ function markSent(key){
 }
 
 const $ = id => document.getElementById(id);
-let filter = DATA.deals.some(d => d.isNew) ? "new" : "all";
+let filter = DATA.deals.some(d => d.isNew && d.type === "super") ? "super" : DATA.deals.some(d => d.isNew) ? "new" : "all";
 
 if (DATA.updated) {
   const [d, t] = DATA.updated.split(" ");
   const [, m, day] = d.split("-").map(Number);
   const c = t => DATA.deals.filter(x => x.type === t).length;
   const lows = DATA.deals.filter(x => x.type === "low" || x.low).length;
-  $("when").innerHTML = `${m}월 ${day}일 ${t} 업데이트 · 매시간 자동으로 바뀌어요<br>급락 ${c("drop")} · 최저가 ${lows} · 골드박스 ${c("gold")} · 카테고리 베스트 ${c("best")}`;
+  $("when").innerHTML = `${m}월 ${day}일 ${t} 업데이트 · 30분마다 자동으로 바뀌어요<br>${c("super") ? `⚡ 초특급 ${c("super")} · ` : ""}급락 ${c("drop")} · 최저가 ${lows} · 골드박스 ${c("gold")} · 카테고리 베스트 ${c("best")}`;
 }
 
 function card(d, i){
   const lowTag = `<span class="tag drop">🏷️ ${d.span}일 최저가</span>`;
-  const tag = d.type === "drop" ? `<span class="tag drop">📉 ${d.pct}% 급락</span>${d.low ? lowTag : ""}`
+  const tag = d.type === "super" ? `<span class="tag super">⚡ ${d.pct}% 초특급</span>${d.low ? lowTag : ""}`
+            : d.type === "drop" ? `<span class="tag drop">📉 ${d.pct}% 급락</span>${d.low ? lowTag : ""}`
             : d.type === "low"  ? lowTag
             : d.type === "gold" ? `<span class="tag gold">🔥 골드박스</span>`
             : `<span class="tag best">🏆 ${esc(d.cat)} ${d.rank}위</span>`;
-  const price = d.type === "drop" ? `<s>${won(d.was)}</s>${won(d.price)}<em>-${d.pct}%</em>`
+  const price = d.type === "drop" || d.type === "super" ? `<s>${won(d.was)}</s>${won(d.price)}<em>-${d.pct}%</em>`
               : d.type === "low"  ? `<s>${won(d.prevMin)}</s>${won(d.price)}`
               : won(d.price);
   const done = !!sent[d.key];
-  return `<div class="deal ${done ? "sent" : ""}">
+  return `<div class="deal ${done ? "sent" : ""} ${d.type === "super" ? "super" : ""}">
     <div class="top">
       <img src="${esc(d.image)}" alt="" loading="lazy">
       <div>

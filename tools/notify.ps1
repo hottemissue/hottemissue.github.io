@@ -17,10 +17,12 @@ if ($Test) {
   }
 } elseif (Test-Path $file) {
   Start-Sleep -Seconds 60   # 사이트가 새로 올라갈 때까지 잠깐 기다렸다가 보내요
-  $n = Get-Content $file -Raw -Encoding UTF8 | ConvertFrom-Json
+  $n = Get-Content $file -Raw -Encoding UTF8 | ConvertFrom-Json   # 알림 여러 개 (초특급 긴급 + 보통)
 } else { "no new deals to notify"; exit 0 }
 
-$n | Add-Member topic $env:NTFY_TOPIC.Trim() -Force
-$body = [Text.Encoding]::UTF8.GetBytes(($n | ConvertTo-Json -Compress))
-Invoke-RestMethod -Method Post -Uri "https://ntfy.sh/" -Body $body -ContentType "application/json; charset=utf-8" | Out-Null
-"notification sent: $($n.title)"
+foreach ($x in @($n)) {
+  $x | Add-Member topic $env:NTFY_TOPIC.Trim() -Force
+  $body = [Text.Encoding]::UTF8.GetBytes(($x | ConvertTo-Json -Compress))
+  Invoke-RestMethod -Method Post -Uri "https://ntfy.sh/" -Body $body -ContentType "application/json; charset=utf-8" | Out-Null
+  "notification sent: $($x.title)"
+}
