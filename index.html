@@ -85,7 +85,7 @@
       <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
     </button>
     <div class="logo">핫템<b>이슈</b></div>
-    <button class="icon-btn" id="bellBtn" aria-label="알림">
+    <button class="icon-btn" id="bellBtn" aria-label="카톡 알림방">
       <svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
     </button>
   </header>
@@ -130,9 +130,11 @@
    - img  : 사진이 안 열릴 때 대신 보여줄 그림 (아래 THUMB 중 하나)
    - link : 쿠팡 파트너스에서 만든 내 링크 (https://link.coupang.com/a/xxxx)
    ========================================================= */
+const KAKAO_CHAT = "https://open.kakao.com/o/g6wILnVi"; // 카톡 오픈채팅방 링크
+
 const PINNED = [
   { title:"🔥 오늘의 쿠팡 특가 모음", emoji:"🛒", img:"cart", bg:"#fff1e0", link:"https://link.coupang.com/a/imXXXzO7Yi", tags:["매일 업데이트"] },
-  { title:"🔔 핫템 알림방 (카톡 오픈채팅)", emoji:"💬", img:"chat", bg:"#fff8d6", link:"#", tags:["신상 알림"] },
+  { title:"🔔 핫템 알림방 (카톡 오픈채팅)", emoji:"💬", img:"chat", bg:"#fff8d6", link:KAKAO_CHAT, tags:["신상 알림"] },
 ];
 
 const PRODUCTS = [
@@ -240,7 +242,7 @@ async function copy(text, msg){
   try{ await navigator.clipboard.writeText(text); toast(msg); }catch(e){ toast(text); }
 }
 $("shareBtn").onclick = ()=> copy(location.href.split("#")[0], "페이지 링크를 복사했어요 🔗");
-$("bellBtn").onclick  = ()=> toast("곧 카톡 알림방이 열려요 🔔");
+$("bellBtn").onclick  = ()=> window.open(KAKAO_CHAT, "_blank", "noopener");
 $("bizBtn").onclick   = ()=> copy(BIZ_EMAIL, `이메일 복사됨: ${BIZ_EMAIL}`);
 
 render();

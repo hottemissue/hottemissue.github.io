@@ -1,9 +1,10 @@
 ﻿# 쿠팡 파트너스 Open API 도우미. 키는 ../coupang-keys.json에서 읽어요 (GitHub에는 안 올라감).
 #   상품 검색:     .\tools\coupang.ps1 -Action search -Items "감성 무드등" -Limit 5
 #   파트너스 링크: .\tools\coupang.ps1 -Action deeplink -Items "https://www.coupang.com/vp/products/123", "..."
+#   오늘의 골드박스: .\tools\coupang.ps1 -Action goldbox
 param(
-  [Parameter(Mandatory = $true)][ValidateSet("search", "deeplink")][string]$Action,
-  [Parameter(Mandatory = $true)][string[]]$Items,
+  [Parameter(Mandatory = $true)][ValidateSet("search", "deeplink", "goldbox")][string]$Action,
+  [string[]]$Items = @(),
   [int]$Limit = 5,
   [string]$SubId = "hottem"
 )
@@ -12,8 +13,13 @@ $ErrorActionPreference = "Stop"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 
-$keyFile = Join-Path $PSScriptRoot "..\coupang-keys.json"
-$keys = Get-Content $keyFile -Raw -Encoding UTF8 | ConvertFrom-Json
+# GitHub 자동 실행에서는 Secrets로 넣은 환경변수를, PC에서는 키 파일을 써요.
+if ($env:COUPANG_ACCESS_KEY -and $env:COUPANG_SECRET_KEY) {
+  $keys = [pscustomobject]@{ accessKey = $env:COUPANG_ACCESS_KEY.Trim(); secretKey = $env:COUPANG_SECRET_KEY.Trim() }
+} else {
+  $keyFile = Join-Path $PSScriptRoot "..\coupang-keys.json"
+  $keys = Get-Content $keyFile -Raw -Encoding UTF8 | ConvertFrom-Json
+}
 if ($keys.accessKey -notmatch '^[\w-]+$' -or $keys.secretKey -notmatch '^[\w-]+$') {
   throw "coupang-keys.json에 Access Key와 Secret Key를 넣어주세요."
 }
@@ -70,6 +76,10 @@ $out = switch ($Action) {
     $body = @{ coupangUrls = $Items; subId = $SubId } | ConvertTo-Json -Compress
     $r = Invoke-Coupang "POST" "$base/deeplink" "" $body
     $r.data | ForEach-Object { [pscustomobject]@{ original = $_.originalUrl; link = $_.shortenUrl } }
+  }
+  "goldbox" {
+    $r = Invoke-Coupang "GET" "$base/products/goldbox" "subId=$SubId"
+    $r.data
   }
 }
 ConvertTo-Json @($out) -Depth 6
