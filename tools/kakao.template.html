@@ -104,7 +104,7 @@ function message(d){
     DISCLOSURE, "",
     ...hook(d), "",
     `☑️ ${d.name}`, ...priceLines,
-    ...(d.rocket ? ["🚀 로켓배송"] : []),
+    d.rocket ? "🚀 로켓배송" : "📦 일반배송 (로켓배송 아님)",
     "", d.link, "",
     basis,
     "✔️ 인기 딜은 빨리 품절되거나 가격이 바뀔 수 있어요!",
@@ -160,7 +160,7 @@ function card(d, i){
     <div class="top">
       <img src="${esc(d.image)}" alt="" loading="lazy">
       <div>
-        <div class="tags">${d.isNew ? `<span class="tag new">NEW</span>` : ""}${tag}${d.price <= DATA.underPrice ? `<span class="tag gold">💰 1만원 이하</span>` : ""}${d.rocket ? `<span class="tag">🚀 로켓</span>` : ""}</div>
+        <div class="tags">${d.isNew ? `<span class="tag new">NEW</span>` : ""}${tag}${d.price <= DATA.underPrice ? `<span class="tag gold">💰 1만원 이하</span>` : ""}${d.rocket ? `<span class="tag">🚀 로켓</span>` : `<span class="tag">📦 일반배송</span>`}</div>
         <div class="name">${esc(d.name)}</div>
         <div class="price">${price}</div>
       </div>
