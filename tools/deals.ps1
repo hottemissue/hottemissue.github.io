@@ -16,7 +16,7 @@ param(
   [int]$MinDays = 3,        # 최저가라고 말하려면 며칠치 기록이 있어야 하는지
   [int]$UnderPrice = 10000, # 이 가격 이하면 우대
   [int]$UnderBonus = 5,     # 우대 상품 할인율에 더할 점수 (예: 25% 할인 + 5 = 30점)
-  [int]$NonRocketPct = 50,  # 로켓배송이 아닌 상품은 이만큼 이상 떨어졌을 때만 올려요 (나머지는 로켓배송만)
+  [int]$RocketBonus = 10,   # 로켓배송 상품 할인율에 더할 점수 (로켓배송이 먼저, 일반배송도 할인이 크면 올라가요)
   [int]$NotifyEvery = 60    # 일반 알림은 몇 분에 한 번 모아서 보낼지 (초특급은 바로)
 )
 
@@ -89,7 +89,7 @@ foreach ($p in @($gold) + @($best)) {
   $pct = if ($was -gt $price) { [int][Math]::Floor(100 * ($was - $price) / $was) } else { 0 }
   $isLow = ($pastDays -ge $MinDays) -and ($price -lt $prevMin)
   if ($pct -ge $DropPct -or $isLow) {
-    $score = $pct + $(if ($price -le $UnderPrice) { $UnderBonus } else { 0 })
+    $score = $pct + $(if ($price -le $UnderPrice) { $UnderBonus } else { 0 }) + $(if ($p.isRocket) { $RocketBonus } else { 0 })
     $signals += [pscustomobject]@{ p = $p; was = $was; pct = $pct; score = $score; low = $isLow; prevMin = $(if ($isLow) { $prevMin } else { 0 }); span = $span }
   }
 
@@ -109,14 +109,14 @@ function Add-Pick($type, $p, $extra) {
   $script:sel += $entry
 }
 function Signal-Extra($x) { @{ was = $x.was; pct = $x.pct; score = $x.score; low = $x.low; prevMin = $x.prevMin; span = $x.span } }
-# 로켓배송 상품만 올리고, 로켓배송이 아니면 $NonRocketPct% 이상 떨어진 아주 센 딜만 올려요.
-$shipOk = { param($x) [bool]$x.p.isRocket -or $x.pct -ge $NonRocketPct }
-foreach ($x in ($signals | Where-Object { $_.pct -ge $SuperPct -and (& $shipOk $_) } | Sort-Object score -Descending | Select-Object -First $MaxSupers)) { Add-Pick "super" $x.p (Signal-Extra $x) }
-foreach ($x in ($signals | Where-Object { $_.pct -ge $DropPct -and $_.pct -lt $SuperPct -and (& $shipOk $_) } | Sort-Object score -Descending | Select-Object -First $MaxDrops)) { Add-Pick "drop" $x.p (Signal-Extra $x) }
-foreach ($x in ($signals | Where-Object { $_.low -and $_.pct -lt $DropPct -and (& $shipOk $_) } | Sort-Object score -Descending | Select-Object -First $MaxLows)) { Add-Pick "low" $x.p (Signal-Extra $x) }
-foreach ($p in ($gold | Where-Object { $_.isRocket } | Sort-Object rank | Select-Object -First $GoldCount)) { Add-Pick "gold" $p @{} }
+# 로켓배송은 우선순위예요: 점수에 보너스를 더하고, 할인율 정보가 없는 골드박스·베스트는 로켓배송을 먼저 골라요.
+$rocketFirst = @{ Expression = { -not $_.isRocket } }
+foreach ($x in ($signals | Where-Object { $_.pct -ge $SuperPct } | Sort-Object score -Descending | Select-Object -First $MaxSupers)) { Add-Pick "super" $x.p (Signal-Extra $x) }
+foreach ($x in ($signals | Where-Object { $_.pct -ge $DropPct -and $_.pct -lt $SuperPct } | Sort-Object score -Descending | Select-Object -First $MaxDrops)) { Add-Pick "drop" $x.p (Signal-Extra $x) }
+foreach ($x in ($signals | Where-Object { $_.low -and $_.pct -lt $DropPct } | Sort-Object score -Descending | Select-Object -First $MaxLows)) { Add-Pick "low" $x.p (Signal-Extra $x) }
+foreach ($p in ($gold | Sort-Object $rocketFirst, rank | Select-Object -First $GoldCount)) { Add-Pick "gold" $p @{} }
 foreach ($c in $CATS.Keys) {
-  foreach ($p in ($best | Where-Object { [string]$_.categoryId -eq $c -and $_.isRocket } | Sort-Object rank | Select-Object -First $BestPerCat)) { Add-Pick "best" $p @{ cat = $CATS[$c] } }
+  foreach ($p in ($best | Where-Object { [string]$_.categoryId -eq $c } | Sort-Object $rocketFirst, rank | Select-Object -First $BestPerCat)) { Add-Pick "best" $p @{ cat = $CATS[$c] } }
 }
 
 # 4) 짧은 파트너스 링크 (한 번 만든 링크는 data/links.json에 저장해 두고 다시 써요)

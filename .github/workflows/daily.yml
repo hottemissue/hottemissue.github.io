@@ -35,6 +35,15 @@ jobs:
           COUPANG_SECRET_KEY: ${{ secrets.COUPANG_SECRET_KEY }}
         run: ./tools/deals.ps1
 
+      - name: 쓰레드에 올린 상품을 메인 페이지에 넣기
+        shell: powershell
+        continue-on-error: true
+        env:
+          THREADS_BOT_READ: ${{ secrets.THREADS_BOT_READ }}
+          COUPANG_ACCESS_KEY: ${{ secrets.COUPANG_ACCESS_KEY }}
+          COUPANG_SECRET_KEY: ${{ secrets.COUPANG_SECRET_KEY }}
+        run: ./tools/threads-sync.ps1
+
       - name: GitHub에 올리기
         shell: powershell
         env:
@@ -42,7 +51,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add kakao.html data
+          git add kakao.html data threads-products.js
           git diff --cached --quiet
           if ($LASTEXITCODE -ne 0) {
             git commit -m "Update hourly deals"

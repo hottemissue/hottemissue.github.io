@@ -113,12 +113,13 @@
 
   <footer>
     이 페이지의 링크를 통해 구매 시 일정액의 수수료를 제공받을 수 있습니다.<br>
-    가격은 2026년 11월 3일 기준이며, 가격과 재고는 쿠팡에서 실시간으로 바뀔 수 있어요.<br>© 핫템이슈
+    가격은 올린 시점 기준이며, 가격과 재고는 쿠팡에서 실시간으로 바뀔 수 있어요.<br>© 핫템이슈
   </footer>
 </div>
 
 <div class="toast" id="toast"></div>
 
+<script src="threads-products.js"></script>
 <script>
 /* =========================================================
    ✏️ 상품 추가/수정은 여기만 고치면 돼요!
@@ -138,6 +139,7 @@ const PINNED = [
 ];
 
 const PRODUCTS = [
+  ...(window.THREADS_PRODUCTS || []), // 쓰레드에 올린 상품 (tools/threads-sync.ps1이 자동으로 채워요)
   { no:12, title:"천장에 바다가 일렁이는 물멍 무드등", cat:"감성템", emoji:"🌙", img:"lamp", bg:"#ece9ff", price:9900, rocket:true, link:"https://link.coupang.com/a/imXXWvgK8i",
     photo:"https://ads-partners.coupang.com/image1/fV9J4PSFTE_Ujlp1fYpWPLPCBwXHe1kqxsvR1YDKbg2Q9OywXgLQZw8jpe-lXB7FEtsZ5F08FuspaQhfhuT_c0MfKDe10UFNIFgNW1FfFwJys4Uqh5xyXO4LrFv3aTtedX34gsZw7yTuNPYKNWT3ao_HRiVm9P2DcugspH_YcdxZNFURuxuJJc3vjvEAhqHxn-U0tt2xpdydEy9pZyrydlo6WuLZ-yyKMF3y0j_mpws03DKP1JD1sQkzLEHJNyuCUCnCWW1IM97eaqR4i9SebExlnaWpjQBw8pR334FnITnkk5HsekOTzsQVBlF1afcvdhizK23tAzg7nkX1-FHuIprUdYiE1zR9efwWjMXZ0s0YxED_cragJpWJirMSFdOm5nZhtMHGruyTgMUxrLlve75ZQDArdF7Kdd1s8SjdDx8ZdaRPTKNOpuUlY9glMaPrJklxAsi1BUGf9Wng03VLm2BIt9XV9NsUYa4wekVL4LWjk-0lRQ9CMzmilYdKEo7PYTBACviCoyshtJJIG66vicqkunrnwKbtIQtUYbWZqnJ-qyhUuMc3ug==" },
   { no:11, title:"건조한 원룸 필수, 듀얼미스트 미니 가습기", cat:"겨울템", emoji:"💧", img:"humid", bg:"#e3f4ff", price:18800, rocket:true, link:"https://link.coupang.com/a/imXXWA0gaO",
@@ -184,8 +186,8 @@ const THUMB={
  chat:S(`<path d="M14 36c0-12 12-20 26-20s26 8 26 20-12 20-26 20c-3 0-6 0-8-1l-12 7 3-11c-6-4-9-9-9-15z" fill="#3c1e1e"/><circle cx="30" cy="36" r="3" fill="#ffe14d"/><circle cx="40" cy="36" r="3" fill="#ffe14d"/><circle cx="50" cy="36" r="3" fill="#ffe14d"/><path d="M58 12l4 4M66 22h-5M52 8v5" stroke="#f5b400" stroke-width="2.5" stroke-linecap="round"/>`),
 };
 
-const CATS = ["전체","겨울템","감성템","생활","주방","디지털"];
-const CAT_ICON = {"전체":"","겨울템":"❄️ ","감성템":"✨ ","생활":"🏠 ","주방":"🍳 ","디지털":"💻 "};
+const CATS = ["전체","쓰레드","겨울템","감성템","생활","주방","디지털"];
+const CAT_ICON = {"전체":"","쓰레드":"🧵 ","겨울템":"❄️ ","감성템":"✨ ","생활":"🏠 ","주방":"🍳 ","디지털":"💻 "};
 const BIZ_EMAIL = "hseojun7@naver.com";
 
 /* ===================== 아래는 건드리지 않아도 돼요 ===================== */
