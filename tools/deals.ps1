@@ -1,12 +1,15 @@
 ﻿# 매시간: 쿠팡 골드박스 + 카테고리 베스트를 가져와 가격을 기록하고,
-# 최근 며칠보다 가격이 떨어진 상품을 찾아 카톡에 붙여넣을 글 페이지(kakao.html)를 만들어요.
+# 최근 30일 최고가보다 많이 떨어졌거나 30일 최저가를 새로 찍은 상품을 찾아
+# 카톡에 붙여넣을 글 페이지(kakao.html)를 만들어요.
 #   .\tools\deals.ps1
 param(
   [int]$GoldCount = 10,     # 골드박스에서 몇 개
   [int]$BestPerCat = 3,     # 카테고리마다 베스트 몇 개
   [int]$MaxDrops = 15,      # 가격 급락 최대 몇 개
-  [int]$DropPct = 10,       # 최고가보다 몇 % 이상 떨어지면 급락으로 볼지
-  [int]$Days = 7            # 최근 며칠 최고가와 비교할지
+  [int]$MaxLows = 15,       # 최저가 갱신 최대 몇 개
+  [int]$DropPct = 20,       # 최고가보다 몇 % 이상 떨어지면 급락으로 볼지
+  [int]$Days = 30,          # 최근 며칠 기록과 비교할지
+  [int]$MinDays = 3         # 최저가라고 말하려면 며칠치 기록이 있어야 하는지
 )
 
 $ErrorActionPreference = "Stop"
@@ -48,7 +51,7 @@ $cutoff = $kst.AddDays(1 - $Days).ToString("yyyy-MM-dd")
 $gold = & $api -Action goldbox | ConvertFrom-Json
 $best = & $api -Action best -Items @($CATS.Keys) -Limit 20 | ConvertFrom-Json
 
-# 2) 가격 기록 (상품번호 -> { 날짜: [그날 최저, 그날 최고] }, 최근 $Days일만 보관)
+# 2) 가격 기록 (상품옵션 -> { 날짜: [그날 최저, 그날 최고] }, 최근 $Days일만 보관)
 $prices = @{}
 foreach ($kv in (Read-Hash "prices.json").GetEnumerator()) {
   $hist = @{}
@@ -56,8 +59,8 @@ foreach ($kv in (Read-Hash "prices.json").GetEnumerator()) {
   if ($hist.Count) { $prices[$kv.Key] = $hist }
 }
 
-# 기록해 둔 최근 최고가보다 지금 가격이 많이 낮으면 '급락'
-$seen = @{}; $drops = @()
+# 기록과 비교해서 '급락'(최고가보다 $DropPct% 이상 낮음)과 '최저가 갱신'(지난 기록 최저가보다 낮음) 찾기
+$seen = @{}; $signals = @()
 foreach ($p in @($gold) + @($best)) {
   $id = Get-ItemKey $p
   $price = [int][double]$p.productPrice
@@ -66,11 +69,17 @@ foreach ($p in @($gold) + @($best)) {
   if (-not $prices.ContainsKey($id)) { $prices[$id] = @{} }
   $hist = $prices[$id]
 
-  $was = 0
-  foreach ($v in $hist.Values) { if ($v[1] -gt $was) { $was = $v[1] } }
-  if ($was -gt $price) {
-    $pct = [int][Math]::Floor(100 * ($was - $price) / $was)
-    if ($pct -ge $DropPct) { $drops += [pscustomobject]@{ p = $p; was = $was; pct = $pct } }
+  $was = 0; $prevMin = [int]::MaxValue; $firstDay = $today; $pastDays = 0
+  foreach ($e in $hist.GetEnumerator()) {
+    if ($e.Value[1] -gt $was) { $was = $e.Value[1] }
+    if ($e.Key -lt $firstDay) { $firstDay = $e.Key }
+    if ($e.Key -lt $today) { $pastDays++; if ($e.Value[0] -lt $prevMin) { $prevMin = $e.Value[0] } }
+  }
+  $span = [int]([datetime]::ParseExact($today, "yyyy-MM-dd", $null) - [datetime]::ParseExact($firstDay, "yyyy-MM-dd", $null)).TotalDays + 1
+  $pct = if ($was -gt $price) { [int][Math]::Floor(100 * ($was - $price) / $was) } else { 0 }
+  $isLow = ($pastDays -ge $MinDays) -and ($price -lt $prevMin)
+  if ($pct -ge $DropPct -or $isLow) {
+    $signals += [pscustomobject]@{ p = $p; was = $was; pct = $pct; low = $isLow; prevMin = $(if ($isLow) { $prevMin } else { 0 }); span = $span }
   }
 
   if ($hist.ContainsKey($today)) { $t = $hist[$today]; $hist[$today] = @([Math]::Min($t[0], $price), [Math]::Max($t[1], $price)) }
@@ -84,9 +93,13 @@ function Add-Pick($type, $p, $extra) {
   $id = [string]$p.productId
   if ($used.ContainsKey($id)) { return }
   $used[$id] = $true
-  $script:sel += @{ type = $type; p = $p; cat = $extra.cat; was = $extra.was; pct = $extra.pct }
+  $entry = @{ type = $type; p = $p }
+  foreach ($k in $extra.Keys) { $entry[$k] = $extra[$k] }
+  $script:sel += $entry
 }
-foreach ($x in ($drops | Sort-Object pct -Descending | Select-Object -First $MaxDrops)) { Add-Pick "drop" $x.p @{ was = $x.was; pct = $x.pct } }
+function Signal-Extra($x) { @{ was = $x.was; pct = $x.pct; low = $x.low; prevMin = $x.prevMin; span = $x.span } }
+foreach ($x in ($signals | Where-Object { $_.pct -ge $DropPct } | Sort-Object pct -Descending | Select-Object -First $MaxDrops)) { Add-Pick "drop" $x.p (Signal-Extra $x) }
+foreach ($x in ($signals | Where-Object { $_.low -and $_.pct -lt $DropPct } | Sort-Object pct -Descending | Select-Object -First $MaxLows)) { Add-Pick "low" $x.p (Signal-Extra $x) }
 foreach ($p in ($gold | Sort-Object @{ Expression = { -not $_.isRocket } }, rank | Select-Object -First $GoldCount)) { Add-Pick "gold" $p @{} }
 foreach ($c in $CATS.Keys) {
   foreach ($p in ($best | Where-Object { [string]$_.categoryId -eq $c } | Sort-Object rank | Select-Object -First $BestPerCat)) { Add-Pick "best" $p @{ cat = $CATS[$c] } }
@@ -118,7 +131,7 @@ Save-Json "links.json" $links
 
 # 5) 지난번에 없던 딜은 '새로 들어온 딜'로 표시
 $state = Read-Hash "state.json"
-$first = -not $state.ContainsKey("keys")
+$firstRun = -not $state.ContainsKey("keys")
 $prev = @{}
 foreach ($k in @($state["keys"])) { if ($k) { $prev[[string]$k] = $true } }
 
@@ -131,33 +144,40 @@ $deals = foreach ($s in $sel) {
     key = $key; type = $s.type; name = $p.productName; price = [int][double]$p.productPrice
     image = $p.productImage; rocket = [bool]$p.isRocket; link = $link
     cat = $s.cat; rank = [int]$p.rank; was = $s.was; pct = $s.pct
-    isNew = (-not $first) -and (-not $prev.ContainsKey($key))
+    low = [bool]$s.low; prevMin = $s.prevMin; span = $s.span
+    isNew = (-not $firstRun) -and (-not $prev.ContainsKey($key))
   }
 }
 $deals = @($deals)
 Save-Json "state.json" @{ keys = @($deals | ForEach-Object { $_.key }) }
 
 # 6) kakao.html 만들기
-$data = [pscustomobject]@{ updated = $kst.ToString("yyyy-MM-dd HH:mm"); days = $Days; cats = @($CATS.Values); deals = $deals } | ConvertTo-Json -Depth 5 -Compress
+$data = [pscustomobject]@{
+  updated = $kst.ToString("yyyy-MM-dd HH:mm"); days = $Days; dropPct = $DropPct; minDays = $MinDays
+  cats = @($CATS.Values); deals = $deals
+} | ConvertTo-Json -Depth 5 -Compress
 $tpl = [IO.File]::ReadAllText((Join-Path $PSScriptRoot "kakao.template.html"), [Text.Encoding]::UTF8)
 $html = [regex]::Replace($tpl, '(?s)/\*DATA\*/.*?/\*END\*/', { param($m) "/*DATA*/$data/*END*/" })
 [IO.File]::WriteAllText((Join-Path $root "kakao.html"), $html, $utf8)
 
-# 7) 휴대폰 알림 내용: 새 급락 딜이나 새 골드박스(3개 이상)가 있으면 알림 파일을 만들어요.
+# 7) 휴대폰 알림 내용: 새 급락, 새 최저가, 새 골드박스(3개 이상)가 있으면 알림 파일을 만들어요.
 #    보내는 건 tools/notify.ps1이 사이트가 새로 올라간 뒤에 해요.
 $notifyFile = Join-Path $env:TEMP "hottem-notify.json"
 if (Test-Path $notifyFile) { Remove-Item $notifyFile }
 $newDrops = @($deals | Where-Object { $_.isNew -and $_.type -eq "drop" } | Sort-Object pct -Descending)
+$newLows = @($deals | Where-Object { $_.isNew -and $_.type -eq "low" })
 $newGold = @($deals | Where-Object { $_.isNew -and $_.type -eq "gold" })
-if ($newDrops.Count -or $newGold.Count -ge 3) {
+if ($newDrops.Count -or $newLows.Count -or $newGold.Count -ge 3) {
   $parts = @()
   if ($newDrops.Count) { $parts += "📉 급락 $($newDrops.Count)개" }
+  if ($newLows.Count) { $parts += "🏷️ 최저가 $($newLows.Count)개" }
   if ($newGold.Count) { $parts += "🔥 골드박스 $($newGold.Count)개" }
-  $lines = @($newDrops | Select-Object -First 3 | ForEach-Object { "-{0}% {1} {2:N0}원" -f $_.pct, $_.name, $_.price })
-  if (-not $lines.Count) { $lines = @($newGold | Select-Object -First 3 | ForEach-Object { "{0} {1:N0}원" -f $_.name, $_.price }) }
+  $lines = @($newDrops | ForEach-Object { "-{0}% {1} {2:N0}원" -f $_.pct, $_.name, $_.price })
+  $lines += @($newLows | ForEach-Object { "최저가 {0} {1:N0}원" -f $_.name, $_.price })
+  if (-not $lines.Count) { $lines = @($newGold | ForEach-Object { "{0} {1:N0}원" -f $_.name, $_.price }) }
   $notify = [pscustomobject]@{
     title = ($parts -join " · ") + " 새로 올라왔어요"
-    message = $lines -join "`n"
+    message = ($lines | Select-Object -First 3) -join "`n"
     click = "https://hottemissue.github.io/kakao.html"
     priority = $(if (@($newDrops | Where-Object { $_.pct -ge 30 }).Count) { 4 } else { 3 })
     tags = @("shopping_cart")
@@ -166,4 +186,4 @@ if ($newDrops.Count -or $newGold.Count -ge 3) {
 }
 
 $count = { param($t) @($deals | Where-Object { $_.type -eq $t }).Count }
-"kakao.html: {0} deals (drop {1}, gold {2}, best {3}, new {4}) tracked {5} products, {6} KST" -f $deals.Count, (& $count "drop"), (& $count "gold"), (& $count "best"), @($deals | Where-Object { $_.isNew }).Count, $prices.Count, $kst.ToString("yyyy-MM-dd HH:mm")
+"kakao.html: {0} deals (drop {1}, low {2}, gold {3}, best {4}, new {5}) tracked {6} products, {7} KST" -f $deals.Count, (& $count "drop"), (& $count "low"), (& $count "gold"), (& $count "best"), @($deals | Where-Object { $_.isNew }).Count, $prices.Count, $kst.ToString("yyyy-MM-dd HH:mm")
