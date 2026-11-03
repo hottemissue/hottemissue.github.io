@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>핫템이슈</title>
+<meta name="description" content="요즘 뜨는 감성템 · 쿠팡 특가만 골라 담았어요">
+<meta property="og:type" content="website">
+<meta property="og:title" content="핫템이슈">
+<meta property="og:description" content="요즘 뜨는 감성템 · 쿠팡 특가만 골라 담았어요 🛒">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+  :root{
+    --bg:#ffffff; --ink:#16181d; --sub:#8b8f98; --line:#eceef2;
+    --card:#ffffff; --soft:#f6f7f9; --accent:#ff4d2e; --banner:#fdf1dc; --bannerInk:#5b6b2e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{padding-bottom:env(safe-area-inset-bottom)}
+  .wrap{max-width:480px;margin:0 auto;padding:0 18px 40px}
+
+  /* 대가성 문구 배너 */
+  .banner{background:var(--banner);color:var(--bannerInk);font-weight:700;font-size:13px;overflow:hidden;white-space:nowrap;padding:12px 0;padding-top:calc(12px + env(safe-area-inset-top))}
+  .banner span{display:inline-block;padding-left:100%;animation:flow 22s linear infinite}
+  @keyframes flow{to{transform:translateX(-100%)}}
+
+  header{display:flex;align-items:center;justify-content:space-between;padding:22px 0 8px}
+  .icon-btn{width:44px;height:44px;border-radius:50%;border:none;background:#d9dbe0;display:grid;place-items:center;cursor:pointer}
+  .icon-btn svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .logo{font-size:30px;font-weight:900;letter-spacing:-1px}
+  .logo b{color:var(--accent)}
+
+  .profile{text-align:center;padding:14px 0 18px}
+  .handle{font-size:24px;font-weight:900;letter-spacing:-.5px}
+  .bio{color:var(--sub);font-size:13.5px;margin-top:6px;line-height:1.5}
+  .biz{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:10px 18px;border:1px solid var(--line);border-radius:999px;background:#fff;font-weight:700;font-size:14px;color:var(--ink);cursor:pointer;font-family:inherit}
+  .biz svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+
+  .search{display:flex;align-items:center;gap:10px;background:var(--soft);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+  .search svg{width:20px;height:20px;stroke:#9aa0a8;fill:none;stroke-width:2;flex:none}
+  .search input{border:none;background:transparent;outline:none;font-size:15px;width:100%;font-family:inherit;color:var(--ink)}
+  .search input::placeholder{color:#b3b7be}
+
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:14px 0 4px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:13.5px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--ink)}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .list{display:flex;flex-direction:column;gap:14px;margin-top:14px}
+  .card{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:20px;padding:12px;box-shadow:0 2px 12px rgba(20,24,40,.08);text-decoration:none;color:inherit;transition:transform .12s}
+  .card:active{transform:scale(.98)}
+  .thumb{width:76px;height:76px;border-radius:14px;flex:none;display:grid;place-items:center;font-size:38px;overflow:hidden}
+  .thumb svg{width:100%;height:100%;display:block}
+  .info{flex:1;min-width:0}
+  .title{font-size:15.5px;font-weight:500;line-height:1.4;letter-spacing:-.2px;word-break:keep-all}
+  .meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+  .tag{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:6px;background:var(--soft);color:#5a5f69}
+  .tag.hot{background:#ffece8;color:var(--accent)}
+  .arrow{color:#c5c8ce;font-size:20px;flex:none;padding-right:4px}
+
+  .pin{background:linear-gradient(135deg,#fff7ec,#fff);border:1px solid #ffe2c2}
+  .pin .title{font-weight:700}
+  .section{font-size:13px;color:var(--sub);font-weight:700;margin:26px 2px 0}
+  .empty{text-align:center;color:var(--sub);padding:40px 0;font-size:14px;display:none}
+
+  footer{text-align:center;color:#b0b4bb;font-size:11.5px;line-height:1.6;margin-top:34px}
+
+  .toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:rgba(22,24,29,.92);color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;white-space:nowrap}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="banner"><span>이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</span></div>
+
+<div class="wrap">
+  <header>
+    <button class="icon-btn" id="shareBtn" aria-label="공유">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
+    </button>
+    <div class="logo">핫템<b>이슈</b></div>
+    <button class="icon-btn" id="bellBtn" aria-label="알림">
+      <svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+    </button>
+  </header>
+
+  <section class="profile">
+    <div class="handle">hottem.issue</div>
+    <p class="bio">요즘 뜨는 감성템 · 쿠팡 특가만 골라 담았어요 🛒<br>번호로 검색하면 바로 찾을 수 있어요</p>
+    <button class="biz" id="bizBtn">
+      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+      비즈니스 제안
+    </button>
+  </section>
+
+  <label class="search">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="번호나 상품명을 입력해주세요." autocomplete="off">
+  </label>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="list" id="pinned"></div>
+  <div class="section" id="secLabel">전체 상품</div>
+  <div class="list" id="list"></div>
+  <div class="empty" id="empty">검색 결과가 없어요 🥲</div>
+
+  <footer>
+    이 페이지의 링크를 통해 구매 시 일정액의 수수료를 제공받을 수 있습니다.<br>
+    가격과 재고는 쿠팡에서 실시간으로 바뀔 수 있어요.<br>© 핫템이슈
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   ✏️ 상품 추가/수정은 여기만 고치면 돼요!
+   - no   : 게시물 번호 (인스타 게시물과 맞추면 검색이 편해요)
+   - title: 카드에 보일 상품명
+   - cat  : 카테고리 (아래 CATS 중 하나)
+   - emoji: 썸네일 아이콘 (나중에 실제 사진으로 교체 가능)
+   - link : 쿠팡 파트너스에서 만든 내 링크 (https://link.coupang.com/a/xxxx)
+   ========================================================= */
+const PINNED = [
+  { title:"🔥 오늘의 쿠팡 특가 모음", emoji:"🛒", img:"cart", bg:"#fff1e0", link:"https://www.coupang.com/np/goldbox", tags:["매일 업데이트"] },
+  { title:"🔔 핫템 알림방 (카톡 오픈채팅)", emoji:"💬", img:"chat", bg:"#fff8d6", link:"#", tags:["신상 알림"] },
+];
+
+const PRODUCTS = [
+  { no:12, title:"침대 위 분위기 끝판왕 감성 무드등", cat:"감성템", emoji:"🌙", img:"lamp", bg:"#ece9ff", link:"https://www.coupang.com/np/search?q=감성+무드등" },
+  { no:11, title:"건조한 원룸 필수, 미니 무선 가습기", cat:"생활",   emoji:"💧", img:"humid", bg:"#e3f4ff", link:"https://www.coupang.com/np/search?q=미니+가습기" },
+  { no:10, title:"자취생 1인용 미니 에어프라이어",     cat:"주방",   emoji:"🍟", img:"fryer", bg:"#fff0dc", link:"https://www.coupang.com/np/search?q=미니+에어프라이어" },
+  { no:9,  title:"한겨울 필수템 전기요 특가",           cat:"특가",   emoji:"🔥", img:"blanket", bg:"#ffe6e1", link:"https://www.coupang.com/np/search?q=전기요" },
+  { no:8,  title:"폭신폭신 극세사 수면바지",            cat:"패션",   emoji:"🧦", img:"pants", bg:"#ffe9f3", link:"https://www.coupang.com/np/search?q=수면바지" },
+  { no:7,  title:"책상 정리되는 3in1 무선 충전 거치대", cat:"디지털", emoji:"🔌", img:"charger", bg:"#e8eef5", link:"https://www.coupang.com/np/search?q=무선충전+거치대" },
+  { no:6,  title:"캠핑 감성 레트로 LED 랜턴",           cat:"감성템", emoji:"🏕️", img:"lantern", bg:"#e7f3e3", link:"https://www.coupang.com/np/search?q=레트로+랜턴" },
+  { no:5,  title:"거실 분위기 바꾸는 포근한 러그",      cat:"감성템", emoji:"🧶", img:"rug", bg:"#f5ede3", link:"https://www.coupang.com/np/search?q=거실+러그" },
+  { no:4,  title:"하루종일 따뜻한 스텐 텀블러",         cat:"생활",   emoji:"☕", img:"tumbler", bg:"#efe8e1", link:"https://www.coupang.com/np/search?q=텀블러" },
+  { no:3,  title:"주방 정리 끝판왕 투명 수납함",        cat:"주방",   emoji:"🧺", img:"box", bg:"#f0f4e6", link:"https://www.coupang.com/np/search?q=주방+수납함" },
+  { no:2,  title:"손목 편한 버티컬 무선 마우스",        cat:"디지털", emoji:"🖱️", img:"mouse", bg:"#e9ecf2", link:"https://www.coupang.com/np/search?q=버티컬+마우스" },
+  { no:1,  title:"방 안 가득 은은한 향, 디퓨저",        cat:"특가",   emoji:"🌿", img:"diffuser", bg:"#e5f3ec", link:"https://www.coupang.com/np/search?q=디퓨저" },
+];
+
+
+/* 썸네일 일러스트 (직접 그린 SVG) */
+const S=(b)=>`<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">${b}</svg>`;
+const THUMB={
+ lamp:S(`<circle cx="40" cy="34" r="24" fill="#fff6c9" opacity=".55"/><path d="M18 40a22 20 0 0 1 44 0z" fill="#ffd36b"/><path d="M18 40a22 20 0 0 1 44 0" fill="none" stroke="#e8a93a" stroke-width="2"/><circle cx="30" cy="30" r="3" fill="#fff3c4"/><circle cx="46" cy="26" r="2.5" fill="#fff3c4"/><rect x="35" y="40" width="10" height="20" rx="4" fill="#f4e7d0"/><rect x="26" y="60" width="28" height="6" rx="3" fill="#c9b8a0"/>`),
+ humid:S(`<path d="M34 22c-4-6 4-8 0-14M44 22c-4-6 4-8 0-14" stroke="#9fd3f5" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="24" y="24" width="32" height="44" rx="14" fill="#fff"/><rect x="24" y="24" width="32" height="44" rx="14" fill="none" stroke="#b6dcf2" stroke-width="2"/><rect x="30" y="44" width="20" height="16" rx="6" fill="#8ccaf0" opacity=".6"/><circle cx="40" cy="34" r="3" fill="#5fb3e8"/>`),
+ fryer:S(`<rect x="18" y="16" width="44" height="50" rx="14" fill="#2f3237"/><rect x="24" y="22" width="32" height="10" rx="5" fill="#45494f"/><circle cx="40" cy="27" r="3" fill="#ff9a3c"/><rect x="24" y="38" width="32" height="20" rx="6" fill="#3b3f45"/><rect x="30" y="45" width="20" height="5" rx="2.5" fill="#6b7078"/><rect x="22" y="66" width="8" height="4" rx="2" fill="#222"/><rect x="50" y="66" width="8" height="4" rx="2" fill="#222"/>`),
+ blanket:S(`<rect x="14" y="30" width="52" height="34" rx="8" fill="#ff8b73"/><path d="M14 44h52M14 54h52" stroke="#ffb3a3" stroke-width="2"/><rect x="14" y="22" width="52" height="14" rx="7" fill="#ffad99"/><path d="M60 58l6 0" stroke="#fff" stroke-width="2"/><rect x="58" y="60" width="10" height="6" rx="2" fill="#fff"/><path d="M30 14c-3 3 3 5 0 8M40 12c-3 3 3 5 0 8M50 14c-3 3 3 5 0 8" stroke="#ff6a4d" stroke-width="2.5" fill="none" stroke-linecap="round"/>`),
+ pants:S(`<path d="M24 16h32l4 50H44l-4-30-4 30H20z" fill="#f7a8c8"/><rect x="24" y="16" width="32" height="7" rx="2" fill="#f287b2"/><g fill="#fff" opacity=".8"><circle cx="30" cy="34" r="2.5"/><circle cx="50" cy="32" r="2.5"/><circle cx="27" cy="52" r="2.5"/><circle cx="53" cy="50" r="2.5"/><circle cx="40" cy="28" r="2"/></g><path d="M40 23v6" stroke="#fff" stroke-width="1.5"/>`),
+ charger:S(`<rect x="14" y="58" width="52" height="8" rx="4" fill="#c9d2de"/><path d="M30 58l6-34h8l-2 34z" fill="#dfe5ec"/><rect x="34" y="14" width="22" height="40" rx="5" fill="#2b2f36" transform="rotate(8 45 34)"/><rect x="36.5" y="17" width="17" height="34" rx="3" fill="#6aa8ff" transform="rotate(8 45 34)"/><circle cx="22" cy="54" r="5" fill="#fff" stroke="#c9d2de" stroke-width="2"/><path d="M58 52l4-4" stroke="#4caf50" stroke-width="2" stroke-linecap="round"/>`),
+ lantern:S(`<circle cx="40" cy="44" r="22" fill="#ffe49a" opacity=".45"/><path d="M32 18a8 6 0 0 1 16 0" fill="none" stroke="#5b6b4a" stroke-width="3"/><rect x="28" y="20" width="24" height="8" rx="3" fill="#5b6b4a"/><rect x="30" y="28" width="20" height="28" rx="4" fill="#fff2c2" stroke="#5b6b4a" stroke-width="3"/><path d="M40 34c-4 6 0 10 0 10s4-4 0-10z" fill="#ffb02e"/><rect x="26" y="56" width="28" height="8" rx="3" fill="#5b6b4a"/>`),
+ rug:S(`<ellipse cx="40" cy="44" rx="30" ry="20" fill="#e8d3b9"/><ellipse cx="40" cy="44" rx="22" ry="14" fill="none" stroke="#c9a77f" stroke-width="2.5"/><ellipse cx="40" cy="44" rx="12" ry="7" fill="#d9b98f"/><path d="M10 44h-4M74 44h-4M14 34l-3-2M66 34l3-2M14 54l-3 2M66 54l3 2" stroke="#c9a77f" stroke-width="2" stroke-linecap="round"/>`),
+ tumbler:S(`<path d="M28 22h24l-3 44H31z" fill="#b8a99a"/><rect x="26" y="14" width="28" height="10" rx="4" fill="#7a6a5c"/><rect x="36" y="10" width="8" height="5" rx="2" fill="#5c4f44"/><rect x="29" y="36" width="22" height="10" fill="#d8ccc0"/><path d="M33 26v36" stroke="#fff" stroke-width="2" opacity=".5" stroke-linecap="round"/>`),
+ box:S(`<rect x="14" y="30" width="52" height="34" rx="5" fill="#dff0f5" stroke="#9cc9d6" stroke-width="2"/><rect x="12" y="24" width="56" height="10" rx="4" fill="#bfe1ea" stroke="#9cc9d6" stroke-width="2"/><rect x="20" y="42" width="10" height="18" rx="3" fill="#f6c86b"/><rect x="34" y="46" width="12" height="14" rx="3" fill="#9dd18b"/><rect x="50" y="40" width="10" height="20" rx="3" fill="#f49a8a"/><path d="M20 38v-2" stroke="#fff"/>`),
+ mouse:S(`<path d="M30 64c-8 0-12-8-10-22 2-14 10-26 22-26 10 0 16 10 16 22 0 18-12 26-28 26z" fill="#3a3f47"/><path d="M42 16c-4 6-6 14-6 22" stroke="#5b616b" stroke-width="2" fill="none"/><rect x="44" y="26" width="5" height="10" rx="2.5" fill="#8a919c"/><path d="M26 58c6 2 16 2 24-4" stroke="#5b616b" stroke-width="2" fill="none"/><circle cx="56" cy="20" r="3" fill="#6ad08a"/>`),
+ diffuser:S(`<path d="M38 36L28 8M40 36l2-30M42 36l12-26" stroke="#8a6a4a" stroke-width="2.5" stroke-linecap="round"/><path d="M30 40h20v4c6 4 8 10 8 14 0 6-6 10-18 10s-18-4-18-10c0-4 2-10 8-14z" fill="#a8d8c0" opacity=".9"/><rect x="33" y="34" width="14" height="8" rx="2" fill="#6b4f36"/><rect x="28" y="52" width="24" height="8" rx="2" fill="#fff" opacity=".7"/><path d="M60 22c3-2 6 0 4 3M18 26c-3-2-6 0-4 3" stroke="#7cc4a0" stroke-width="2" fill="none" stroke-linecap="round"/>`),
+ cart:S(`<path d="M12 18h8l8 32h30l6-22H24" fill="none" stroke="#ff6a3d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M27 30h35l-5 16H31z" fill="#ffb58f"/><circle cx="32" cy="60" r="5" fill="#ff6a3d"/><circle cx="54" cy="60" r="5" fill="#ff6a3d"/><rect x="44" y="10" width="22" height="12" rx="6" fill="#ff3b30"/><text x="55" y="19" font-size="8" font-weight="900" fill="#fff" text-anchor="middle" font-family="sans-serif">SALE</text>`),
+ chat:S(`<path d="M14 36c0-12 12-20 26-20s26 8 26 20-12 20-26 20c-3 0-6 0-8-1l-12 7 3-11c-6-4-9-9-9-15z" fill="#3c1e1e"/><circle cx="30" cy="36" r="3" fill="#ffe14d"/><circle cx="40" cy="36" r="3" fill="#ffe14d"/><circle cx="50" cy="36" r="3" fill="#ffe14d"/><path d="M58 12l4 4M66 22h-5M52 8v5" stroke="#f5b400" stroke-width="2.5" stroke-linecap="round"/>`),
+};
+
+const CATS = ["전체","특가","감성템","생활","주방","디지털","패션"];
+const CAT_ICON = {"전체":"","특가":"🔥 ","감성템":"✨ ","생활":"🏠 ","주방":"🍳 ","디지털":"💻 ","패션":"👕 "};
+const BIZ_EMAIL = "hseojun7@naver.com";
+
+/* ===================== 아래는 건드리지 않아도 돼요 ===================== */
+let cat = "전체";
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(3,"0");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function card(p, isPin){
+  const tags = isPin ? (p.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join("")
+    : `<span class="tag ${p.cat==="특가"?"hot":""}">${CAT_ICON[p.cat]||""}${esc(p.cat)}</span>`;
+  const title = isPin ? esc(p.title) : `[${pad(p.no)}] ${esc(p.title)}`;
+  return `<a class="card ${isPin?"pin":""}" href="${esc(p.link)}" target="_blank" rel="noopener sponsored">
+    <div class="thumb" style="background:${p.bg}">${THUMB[p.img]||p.emoji}</div>
+    <div class="info"><div class="title">${title}</div><div class="meta">${tags}</div></div>
+    <div class="arrow">›</div></a>`;
+}
+
+function render(){
+  const q = $("q").value.trim().toLowerCase().replace(/^\[?0*/,"").replace(/\]$/,"");
+  const items = PRODUCTS.filter(p =>
+    (cat==="전체" || p.cat===cat) &&
+    (!q || String(p.no)===q || p.title.toLowerCase().includes(q) || p.cat.includes(q))
+  );
+  $("list").innerHTML = items.map(p=>card(p,false)).join("");
+  $("empty").style.display = items.length ? "none" : "block";
+  const filtering = q || cat!=="전체";
+  $("pinned").style.display = filtering ? "none" : "flex";
+  $("secLabel").textContent = q ? `검색 결과 ${items.length}개` : (cat==="전체" ? "전체 상품" : `${CAT_ICON[cat]}${cat}`);
+}
+
+$("pinned").innerHTML = PINNED.map(p=>card(p,true)).join("");
+$("chips").innerHTML = CATS.map(c=>`<button class="chip ${c===cat?"on":""}" data-c="${c}">${CAT_ICON[c]}${c}</button>`).join("");
+$("chips").addEventListener("click", e=>{
+  const b = e.target.closest(".chip"); if(!b) return;
+  cat = b.dataset.c;
+  document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("on", x===b));
+  render();
+});
+$("q").addEventListener("input", render);
+
+let tt;
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),2200); }
+async function copy(text, msg){
+  try{ await navigator.clipboard.writeText(text); toast(msg); }catch(e){ toast(text); }
+}
+$("shareBtn").onclick = ()=> copy(location.href.split("#")[0], "페이지 링크를 복사했어요 🔗");
+$("bellBtn").onclick  = ()=> toast("곧 카톡 알림방이 열려요 🔔");
+$("bizBtn").onclick   = ()=> copy(BIZ_EMAIL, `이메일 복사됨: ${BIZ_EMAIL}`);
+
+render();
+</script>
+</body>
+</html>
