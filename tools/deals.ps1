@@ -143,5 +143,27 @@ $tpl = [IO.File]::ReadAllText((Join-Path $PSScriptRoot "kakao.template.html"), [
 $html = [regex]::Replace($tpl, '(?s)/\*DATA\*/.*?/\*END\*/', { param($m) "/*DATA*/$data/*END*/" })
 [IO.File]::WriteAllText((Join-Path $root "kakao.html"), $html, $utf8)
 
+# 7) 휴대폰 알림 내용: 새 급락 딜이나 새 골드박스(3개 이상)가 있으면 알림 파일을 만들어요.
+#    보내는 건 tools/notify.ps1이 사이트가 새로 올라간 뒤에 해요.
+$notifyFile = Join-Path $env:TEMP "hottem-notify.json"
+if (Test-Path $notifyFile) { Remove-Item $notifyFile }
+$newDrops = @($deals | Where-Object { $_.isNew -and $_.type -eq "drop" } | Sort-Object pct -Descending)
+$newGold = @($deals | Where-Object { $_.isNew -and $_.type -eq "gold" })
+if ($newDrops.Count -or $newGold.Count -ge 3) {
+  $parts = @()
+  if ($newDrops.Count) { $parts += "📉 급락 $($newDrops.Count)개" }
+  if ($newGold.Count) { $parts += "🔥 골드박스 $($newGold.Count)개" }
+  $lines = @($newDrops | Select-Object -First 3 | ForEach-Object { "-{0}% {1} {2:N0}원" -f $_.pct, $_.name, $_.price })
+  if (-not $lines.Count) { $lines = @($newGold | Select-Object -First 3 | ForEach-Object { "{0} {1:N0}원" -f $_.name, $_.price }) }
+  $notify = [pscustomobject]@{
+    title = ($parts -join " · ") + " 새로 올라왔어요"
+    message = $lines -join "`n"
+    click = "https://hottemissue.github.io/kakao.html"
+    priority = $(if (@($newDrops | Where-Object { $_.pct -ge 30 }).Count) { 4 } else { 3 })
+    tags = @("shopping_cart")
+  }
+  [IO.File]::WriteAllText($notifyFile, ($notify | ConvertTo-Json -Compress), $utf8)
+}
+
 $count = { param($t) @($deals | Where-Object { $_.type -eq $t }).Count }
 "kakao.html: {0} deals (drop {1}, gold {2}, best {3}, new {4}) tracked {5} products, {6} KST" -f $deals.Count, (& $count "drop"), (& $count "gold"), (& $count "best"), @($deals | Where-Object { $_.isNew }).Count, $prices.Count, $kst.ToString("yyyy-MM-dd HH:mm")

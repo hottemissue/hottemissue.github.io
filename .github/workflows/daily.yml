@@ -7,6 +7,11 @@ on:
   schedule:
     - cron: "7 * * * *"    # 매시간 7분쯤 (GitHub 사정으로 조금 늦을 수 있어요)
   workflow_dispatch:        # Actions 탭에서 'Run workflow'로 바로 돌릴 수도 있어요.
+    inputs:
+      test_notify:
+        description: "시험 알림 보내기"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -47,3 +52,9 @@ jobs:
             gh api -X POST "repos/${{ github.repository }}/pages/builds" | Out-Null
           }
           exit 0
+
+      - name: 휴대폰 알림 보내기
+        shell: powershell
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: if ("${{ inputs.test_notify }}" -eq "true") { ./tools/notify.ps1 -Test } else { ./tools/notify.ps1 }
