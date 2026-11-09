@@ -13,12 +13,26 @@ $tools = $PSScriptRoot
 git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+# 매번 확인을 시작할 때 GitHub에 있는 최신 상태로 맞춰요.
+# (실행 두 개가 겹치거나 지난번 올리기가 충돌로 꼬였어도, 꼬인 파일을 버리고 깨끗하게 다시 시작해요)
+function Sync-Main {
+  if ((Test-Path .git\rebase-merge) -or (Test-Path .git\rebase-apply)) { git rebase --abort }
+  git fetch -q origin main
+  if ($LASTEXITCODE -ne 0) { throw "git fetch failed" }
+  git reset -q --hard origin/main
+  if ($LASTEXITCODE -ne 0) { throw "git reset failed" }
+}
+
 function Publish-Changes {
   git add kakao.html data threads-products.js
   git diff --cached --quiet
   if ($LASTEXITCODE -eq 0) { return }
   git commit -q -m "Update deals"
   git pull --rebase -q
+  if ($LASTEXITCODE -ne 0) {
+    git rebase --abort
+    throw "git pull failed (conflict with another run); next check starts fresh from main"
+  }
   git push -q
   if ($LASTEXITCODE -ne 0) { throw "git push failed" }
   # 사이트는 push만으로 다시 빌드돼요 (따로 빌드 요청을 하면 두 번 빌드돼서 GitHub 한도에 걸려요)
@@ -29,6 +43,7 @@ for ($i = 1; $i -le $Checks; $i++) {
   $start = Get-Date
   "=== check $i / $Checks ($($start.ToUniversalTime().ToString('HH:mm:ss')) UTC) ==="
   try {
+    Sync-Main
     & "$tools\deals.ps1"
     # 쓰레드 동기화가 실패해도 딜 업데이트는 계속해요
     try { & "$tools\threads-sync.ps1" } catch { Write-Warning "threads sync failed: $($_.Exception.Message)" }

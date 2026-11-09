@@ -17,7 +17,10 @@ param(
   [int]$UnderPrice = 10000, # 이 가격 이하면 우대
   [int]$UnderBonus = 5,     # 우대 상품 할인율에 더할 점수 (예: 25% 할인 + 5 = 30점)
   [int]$RocketBonus = 10,   # 로켓배송 상품 할인율에 더할 점수 (로켓배송이 먼저, 일반배송도 할인이 크면 올라가요)
-  [int]$NotifyEvery = 60    # 일반 알림은 몇 분에 한 번 모아서 보낼지 (초특급은 바로)
+  [int]$NotifyEvery = 60,   # 일반 알림은 몇 분에 한 번 모아서 보낼지 (초특급은 바로)
+  [int]$QuietFrom = 23,     # 한국시간 밤 몇 시부터 조용히 할지
+  [int]$QuietTo = 7,        # 아침 몇 시까지 조용히 할지
+  [int]$QuietPct = 90       # 조용한 시간에도 알림을 보낼 할인율 (이 % 이상만)
 )
 
 $ErrorActionPreference = "Stop"
@@ -178,13 +181,16 @@ $html = [regex]::Replace($tpl, '(?s)/\*DATA\*/.*?/\*END\*/', { param($m) "/*DATA
 #    - 새 초특급($SuperPct% 이상)은 시간 상관없이 바로 '긴급' 알림
 #    - 나머지 새 딜(급락, 최저가, 골드박스)은 data/notify.json에 모아 뒀다가
 #      마지막 알림 뒤 $NotifyEvery분이 지나면 한 번에 묶어서 알림
+#    - 밤 $QuietFrom시 ~ 아침 $QuietTo시(한국시간)에는 $QuietPct% 이상 떨어진 초특급만 알림.
+#      모아둔 딜은 아침 $QuietTo시 뒤 첫 확인 때 아직 페이지에 있는 것만 한 번에 알려요.
 $notifyFile = Join-Path $env:TEMP "hottem-notify.json"
 if (Test-Path $notifyFile) { Remove-Item $notifyFile }
 $page = "https://hottemissue.github.io/kakao.html"
 $line = { param($d) "-{0}% {1}{2} {3:N0}원" -f $d.pct, $(if ($d.price -le $UnderPrice) { "💰" } else { "" }), $d.name, $d.price }
 $notes = @()
+$quiet = ($kst.Hour -ge $QuietFrom) -or ($kst.Hour -lt $QuietTo)
 
-$newSupers = @($deals | Where-Object { $_.isNew -and $_.type -eq "super" } | Sort-Object score -Descending)
+$newSupers = @($deals | Where-Object { $_.isNew -and $_.type -eq "super" -and (-not $quiet -or $_.pct -ge $QuietPct) } | Sort-Object score -Descending)
 if ($newSupers.Count) {
   $notes += [pscustomobject]@{
     title = "⚡ 초특급 최대 -$(($newSupers | Measure-Object pct -Maximum).Maximum)% · $($newSupers.Count)개 떴어요"
@@ -205,7 +211,7 @@ foreach ($d in $deals) { $onPage[$d.key] = $d }
 foreach ($k in @($pending.Keys)) { if (-not $onPage.ContainsKey($k)) { $pending.Remove($k) } }
 
 $lastSent = if ($ns.lastSent) { [datetime]::ParseExact([string]$ns.lastSent, "yyyy-MM-dd HH:mm", $null) } else { [datetime]::MinValue }
-if (($kst - $lastSent).TotalMinutes -ge $NotifyEvery - 5) {
+if (-not $quiet -and ($kst - $lastSent).TotalMinutes -ge $NotifyEvery - 5) {
   $ready = @($pending.Keys | ForEach-Object { $onPage[$_] })
   $drops = @($ready | Where-Object { $_.type -in @("drop", "low") } | Sort-Object score -Descending)
   $golds = @($ready | Where-Object { $_.type -eq "gold" })
@@ -235,3 +241,4 @@ if ($notes.Count) { [IO.File]::WriteAllText($notifyFile, (ConvertTo-Json -InputO
 
 $count = { param($t) @($deals | Where-Object { $_.type -eq $t }).Count }
 "kakao.html: {0} deals (super {1}, drop {2}, low {3}, gold {4}, best {5}, new {6}) tracked {7} products, {8} KST" -f $deals.Count, (& $count "super"), (& $count "drop"), (& $count "low"), (& $count "gold"), (& $count "best"), @($deals | Where-Object { $_.isNew }).Count, $prices.Count, $kst.ToString("yyyy-MM-dd HH:mm")
+if ($quiet) { "night mode ({0}~{1} KST): only {2}%+ super deals notify" -f $QuietFrom, $QuietTo, $QuietPct }
